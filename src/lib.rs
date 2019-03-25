@@ -5,13 +5,13 @@ use swym::tcell::{TCell, Ref};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use swym::{ReadTx, RWTx};
-use swym::tx::Ordering;
+use swym::tx::{Borrow, Ordering};
 //use std::borrow::Borrow;
 
 pub const HASHMAP_INIT_CAPACITY_LOOKUP_BITS: usize = 8;
 
-fn init_storage<V: Send + Clone>(capacity: usize) ->  Vec<TCell<Box<Entry<V>>>> {
-    (0..capacity).map(|_| TCell::new(Box::new(Entry::Vacant))).collect()
+fn init_storage<V: Send + Clone>(capacity: usize) ->  Vec<TCell<Entry<V>>> {
+    (0..capacity).map(|_| TCell::new(Entry::Vacant)).collect()
 }
 
 fn compute_index(hash: u32, lookup_bits_count: usize) -> usize {
@@ -25,12 +25,14 @@ pub enum Entry<V: Send + Sized + Clone> {
     Occupied(V),
 }
 
+unsafe impl<V: Send + Sized + Clone> Borrow for Entry<V> {}
+
 pub struct TCHashMap<K, V>
 where
     K: Hash + ?Sized,
     V: Send + Clone,
 {
-    storage: Vec<TCell<Box<Entry<V>>>>,
+    storage: Vec<TCell<Entry<V>>>,
     lookup_bits_count: usize,
     capacity: usize,
     phantom: PhantomData<K>,
@@ -41,6 +43,7 @@ where
     K: Hash + ?Sized,
     V: Send + 'static + Clone,
 {
+    #[inline]
     pub fn new() -> Self {
         let capacity = 2_usize.pow(HASHMAP_INIT_CAPACITY_LOOKUP_BITS as u32);
 
@@ -52,17 +55,19 @@ where
         }
     }
 
+    #[inline]
     pub fn insert(&self, k: &K, v: V) {
         let thread_key = thread_key::get();
         let hash = fxhash::hash32(&k);
         let index = compute_index(hash, self.lookup_bits_count);
 
         thread_key.rw(|tx| {
-            self.storage[index].set(tx, Box::new(Entry::Occupied(v.clone())))?;
+            self.storage[index].set(tx, Entry::Occupied(v.clone()))?;
             Ok(())
         });
     }
 
+    #[inline]
     pub fn get(&self, k: &K) -> Entry<V> { // View<V, ReadTx> &TCell<Entry<V>>
         let thread_key = thread_key::get();
         let hash = fxhash::hash32(&k);
@@ -74,9 +79,9 @@ where
         let mut v = None;
 
         thread_key.read(|tx| {
-            let inner: Result<Ref<Box<Entry<V>>>, ()> = Ok(self.storage[index].borrow(tx, Ordering::Read)?);
+            let inner: Result<Ref<Entry<V>>, ()> = Ok(self.storage[index].borrow(tx, Ordering::Read)?);
             if let Ok(inner) = inner {
-                v = Some(*inner.clone());
+                v = Some(inner.clone());
             }
 
             Ok(())
