@@ -3,6 +3,10 @@ name = "ccl"
 version = "0.1.0"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
+license = "MIT"
+repository = "https://gitlab.com/xacrimon/ccl"
+homepage = "https://gitlab.com/xacrimon/ccl"
+description = "STM collections"
 
 [dependencies]
 swym = "0.1.0-preview"
