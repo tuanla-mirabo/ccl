@@ -1,0 +1,9 @@
+[package]
+name = "ccl"
+version = "0.1.0"
+authors = ["acrimon <joel.wejdenstal@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+swym = "0.1.0-preview"
+fxhash = "0.2.1"
