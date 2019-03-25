@@ -1,13 +1,13 @@
 [package]
 name = "ccl"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://gitlab.com/xacrimon/ccl"
 homepage = "https://gitlab.com/xacrimon/ccl"
 description = "blazing fast concurrent collections for rust"
-documentation = "https://docs.rs/ccl/0.2.1/ccl"
+documentation = "https://docs.rs/ccl"
 
 [dependencies]
 swym = "0.1.0-preview"
