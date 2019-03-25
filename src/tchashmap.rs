@@ -111,7 +111,7 @@ where
             match *current {
                 Entry::Vacant => {},
                 _ => {
-                    println!("tchashmap: collision detected");
+                    println!("tchashmap: collision detected, overwriting");
                 },
             }
             inner.storage[index].set(tx, Entry::Occupied(k.clone(), v.clone()))?;
