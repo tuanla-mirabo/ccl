@@ -1,3 +1,3 @@
 # ccl
 
-fast, concurrent collections for rust
+blazing fast concurrent collections for rust

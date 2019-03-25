@@ -1,13 +1,17 @@
 [package]
 name = "ccl"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://gitlab.com/xacrimon/ccl"
 homepage = "https://gitlab.com/xacrimon/ccl"
-description = "STM collections"
+description = "blazing fast concurrent collections for rust"
 
 [dependencies]
 swym = "0.1.0-preview"
 fxhash = "0.2.1"
+hashbrown = "0.1.8"
+seahash = "3.0.6"
+parking_lot = "0.7.1"
+smallvec = "0.6.9"
