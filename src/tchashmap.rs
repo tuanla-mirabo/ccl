@@ -1,4 +1,5 @@
 //! tchashmap is a highly experimental hashmap based of transactional memory
+//! TODO: collision handling, better api (closures, get, alter etc)
 
 use swym::thread_key;
 use swym::tcell::{TCell, Ref};
@@ -82,7 +83,7 @@ where
             if let Entry::Occupied(k, v) = cell.into_inner() {
                 let hash = fxhash::hash32(&k);
                 let index = compute_index(hash, lbc);
-                println!("index: {} hash: {}", index, hash);
+                //println!("index: {} hash: {}", index, hash);
                 inner.storage[index] = TCell::new(Entry::Occupied(k, v));
             }
         });
@@ -95,7 +96,7 @@ where
         let capacity = inner.capacity;
         drop(inner);
 
-        println!("newlen: {}, thcap: {}", len + 1, (capacity as f32 * HASHMAP_LOAD_THRESHOLD) as usize);
+        //println!("newlen: {}, thcap: {}", len + 1, (capacity as f32 * HASHMAP_LOAD_THRESHOLD) as usize);
         if len + 1 > (capacity as f32 * HASHMAP_LOAD_THRESHOLD) as usize {
             self.resize(lbc + 1);
         }
@@ -106,6 +107,13 @@ where
         let index = compute_index(hash, inner.lbc);
         inner.len.fetch_add(1, atomic::Ordering::Relaxed);
         thread_key.rw(|tx| {
+            let current = inner.storage[index].borrow(tx, Ordering::Read)?;
+            match *current {
+                Entry::Vacant => {},
+                _ => {
+                    println!("tchashmap: collision detected");
+                },
+            }
             inner.storage[index].set(tx, Entry::Occupied(k.clone(), v.clone()))?;
             Ok(())
         });
@@ -152,6 +160,7 @@ mod tests {
     #[test]
     fn insert_then_assert() {
         let map = TCHashMap::new();
+
         let n: u32 = 128;
         (0..n).for_each(|i| {
             map.insert(i, i + 9);
