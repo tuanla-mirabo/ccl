@@ -10,14 +10,14 @@
 use hashbrown::HashMap;
 use parking_lot::RwLock;
 use smallvec::SmallVec;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 
 // the amount of bits to look at when determining maps
-const NCB: u64 = 6;
+const NCB: u64 = 8;
 
 // number of maps, needs to be 2^NCB
-const NCM: usize = 64;
+const NCM: usize = 256;
 
 #[derive(Default)]
 pub struct DHashMap<K, V>
@@ -44,21 +44,21 @@ where
 
     #[inline]
     pub fn insert(&self, key: K, value: V) {
-        let mapi = determine_map(seahash_hash(&key));
+        let mapi = determine_map(hash(&key));
         let mut submap = self.submaps[mapi].write();
         submap.insert(key, value);
     }
 
     #[inline]
     pub fn contains_key(&self, key: &K) -> bool {
-        let mapi = determine_map(seahash_hash(&key));
+        let mapi = determine_map(hash(&key));
         let submap = self.submaps[mapi].read();
         submap.contains_key(&key)
     }
 
     #[inline]
     pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
-        let mapi = determine_map(seahash_hash(&key));
+        let mapi = determine_map(hash(&key));
         let submap = self.submaps[mapi].read();
         if submap.contains_key(&key) {
             Some(DHashMapRef { lock: submap, key })
@@ -69,7 +69,7 @@ where
 
     #[inline]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
-        let mapi = determine_map(seahash_hash(&key));
+        let mapi = determine_map(hash(&key));
         let submap = self.submaps[mapi].write();
         if submap.contains_key(&key) {
             Some(DHashMapRefMut { lock: submap, key })
@@ -80,7 +80,7 @@ where
 
     #[inline]
     pub fn remove(&self, key: &K) {
-        let mapi = determine_map(seahash_hash(&key));
+        let mapi = determine_map(hash(&key));
         let mut submap = self.submaps[mapi].write();
         submap.remove(key);
     }
@@ -122,10 +122,8 @@ fn check_opt(ncb: u64, ncm: usize) -> bool {
 }
 
 #[inline]
-fn seahash_hash<V: Hash>(data: &V) -> u64 {
-    let mut hasher = seahash::SeaHasher::new();
-    data.hash(&mut hasher);
-    hasher.finish()
+fn hash<V: Hash>(data: &V) -> u64 {
+    fxhash::hash64(data)
 }
 
 #[inline]

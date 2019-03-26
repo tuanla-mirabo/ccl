@@ -10,9 +10,7 @@ description = "blazing fast concurrent collections for rust"
 documentation = "https://docs.rs/ccl"
 
 [dependencies]
-swym = "0.1.0-preview"
 fxhash = "0.2.1"
 hashbrown = { version = "0.1.8", features = ["nightly"] }
-seahash = "3.0.6"
 parking_lot = { version = "0.7.1", features = ["nightly"] }
 smallvec = "0.6.9"
