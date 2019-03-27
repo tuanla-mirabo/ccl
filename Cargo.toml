@@ -1,11 +1,11 @@
 [package]
 name = "ccl"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
-repository = "https://gitlab.com/xacrimon/ccl"
-homepage = "https://gitlab.com/xacrimon/ccl"
+repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
+homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 description = "blazing fast concurrent collections for rust"
 documentation = "https://docs.rs/ccl"
 
