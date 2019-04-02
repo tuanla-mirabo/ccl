@@ -1,3 +1,3 @@
 # ccl
 
-blazing fast concurrent collections for rust
+blazing fast concurrent data structures for rust
