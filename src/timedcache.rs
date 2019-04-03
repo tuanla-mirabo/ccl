@@ -1,5 +1,6 @@
 //! Threadsafe concurrent timed cache based of DHashMap.
 //! Handles loading and potential saving behind the scenes with user supplied functions.
+//! Intended for use in high concurrency applications.
 
 use crate::dhashmap::DHashMap;
 use parking_lot::Mutex;
@@ -12,6 +13,10 @@ pub const SAVE_INTERVAL: time::Duration = time::Duration::from_secs(3 * 60);
 
 /// Threadsafe concurrent timed cache based of DHashMap.
 /// Handles loading and potential saving behind the scenes with user supplied functions.
+/// Intended for use in high concurrency applications.
+///
+/// The `do_check` method has to be called periodically to do maintenance.
+/// The supplied durations ensure that maintenance is done independently of how often `do_check` is called.
 pub struct TimedCache<K, V>
 where
     K: Hash + Eq + Clone,
@@ -29,6 +34,12 @@ where
 impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
     /// Creates a new TimedCache. Saving function may be empty if no custom saving functionality is needed.
     /// Takes three duration arguments. Supply `None` to use the defaults.
+    ///
+    /// The `valid_duration` argument specifies how long a entry is valid before scheduling it for eviction.
+    ///
+    /// The `valid_check_interval` argument specifies how often expiry checking is done.
+    ///
+    /// The `save_interval` argument specifies how often to call the save function on unsaved entries.
     pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool, valid_duration: Option<time::Duration>, valid_check_interval: Option<time::Duration>, save_interval: Option<time::Duration>) -> Self {
         Self {
             storage: DHashMap::new(),
