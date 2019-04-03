@@ -1,4 +1,4 @@
-//! Threadsafe concurrent timed cache based of DHashMap.
+//! Threadsafe concurrent timed cache.
 //! Handles loading and potential saving behind the scenes with user supplied functions.
 //! Intended for use in high concurrency applications.
 
@@ -11,7 +11,7 @@ pub const VALID_DURATION: time::Duration = time::Duration::from_secs(6 * 60 * 60
 pub const VALID_CHECK_INTERVAL: time::Duration = time::Duration::from_secs(30 * 60);
 pub const SAVE_INTERVAL: time::Duration = time::Duration::from_secs(3 * 60);
 
-/// Threadsafe concurrent timed cache based of DHashMap.
+/// Threadsafe concurrent timed cache.
 /// Handles loading and potential saving behind the scenes with user supplied functions.
 /// Intended for use in high concurrency applications.
 ///
