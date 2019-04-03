@@ -5,7 +5,6 @@
 //! differences to due to the design of the hashmap
 //!
 //! initialization is fairly costly
-//!
 
 use hashbrown::HashMap;
 use parking_lot::RwLock;
