@@ -1,6 +1,4 @@
-//! highly concurrect cache base
-//! takes closures to generalize saving and loading
-//! configurable intervals
+//! threadsafe concurrent timed cache based of dhashmap
 
 use crate::dhashmap::DHashMap;
 use parking_lot::Mutex;
