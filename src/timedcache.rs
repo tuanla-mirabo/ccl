@@ -18,16 +18,22 @@ where
     save_item_fn: fn(&K, &V) -> bool,
     last_saved: Mutex<time::Instant>,
     last_purged: Mutex<time::Instant>,
+    valid_duration: time::Duration,
+    valid_check_interval: time::Duration,
+    save_interval: time::Duration,
 }
 
 impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
-    pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool) -> Self {
+    pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool, valid_duration: Option<time::Duration>, valid_check_interval: Option<time::Duration>, save_interval: Option<time::Duration>) -> Self {
         Self {
             storage: DHashMap::new(),
             load_item_fn: load_item,
             save_item_fn: save_item,
             last_saved: Mutex::new(time::Instant::now()),
             last_purged: Mutex::new(time::Instant::now()),
+            valid_duration: valid_duration.unwrap_or(VALID_DURATION),
+            valid_check_interval: valid_check_interval.unwrap_or(VALID_CHECK_INTERVAL),
+            save_interval: save_interval.unwrap_or(SAVE_INTERVAL),
         }
     }
 
@@ -65,10 +71,10 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         };
 
         let check_to_evict = |_k: &K, v: &mut (V, time::Instant, bool)| -> bool {
-            now.duration_since(v.1) > VALID_DURATION && v.2
+            now.duration_since(v.1) > self.valid_duration && v.2
         };
 
-        if now.duration_since(*last_saved) > SAVE_INTERVAL {
+        if now.duration_since(*last_saved) > self.save_interval {
             *last_saved = now;
 
             self.storage.submaps_write().for_each(|mut submap| {
@@ -78,7 +84,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
             });
         }
 
-        if now.duration_since(*last_purged) > VALID_CHECK_INTERVAL {
+        if now.duration_since(*last_purged) > self.valid_check_interval {
             *last_purged = now;
 
             self.storage.retain(|k, v| !check_to_evict(k, v));
