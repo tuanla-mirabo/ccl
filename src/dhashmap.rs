@@ -11,6 +11,7 @@ use parking_lot::RwLock;
 use smallvec::SmallVec;
 use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
+use std::hash::Hasher;
 
 // the amount of bits to look at when determining maps
 const NCB: u64 = 8;
@@ -24,6 +25,7 @@ where
     K: Hash + Eq,
 {
     submaps: SmallVec<[RwLock<HashMap<K, V>>; NCM]>,
+    hash_nonce: u64,
 }
 
 impl<'a, K: 'a, V: 'a> DHashMap<K, V>
@@ -38,26 +40,27 @@ where
 
         Self {
             submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect(),
+            hash_nonce: rand::random(),
         }
     }
 
     #[inline]
     pub fn insert(&self, key: K, value: V) {
-        let mapi = determine_map(hash(&key));
+        let mapi = self.determine_map(&key);
         let mut submap = self.submaps[mapi].write();
         submap.insert(key, value);
     }
 
     #[inline]
     pub fn contains_key(&self, key: &K) -> bool {
-        let mapi = determine_map(hash(&key));
+        let mapi = self.determine_map(&key);
         let submap = self.submaps[mapi].read();
         submap.contains_key(&key)
     }
 
     #[inline]
     pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
-        let mapi = determine_map(hash(&key));
+        let mapi = self.determine_map(&key);
         let submap = self.submaps[mapi].read();
         if submap.contains_key(&key) {
             Some(DHashMapRef { lock: submap, key })
@@ -68,7 +71,7 @@ where
 
     #[inline]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
-        let mapi = determine_map(hash(&key));
+        let mapi = self.determine_map(&key);
         let submap = self.submaps[mapi].write();
         if submap.contains_key(&key) {
             Some(DHashMapRefMut { lock: submap, key })
@@ -79,7 +82,7 @@ where
 
     #[inline]
     pub fn remove(&self, key: &K) {
-        let mapi = determine_map(hash(&key));
+        let mapi = self.determine_map(&key);
         let mut submap = self.submaps[mapi].write();
         submap.remove(key);
     }
@@ -113,22 +116,23 @@ where
     ) -> impl Iterator<Item = parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
         self.submaps.iter().map(|locked| locked.write())
     }
+
+    #[inline]
+    pub fn determine_map(&self, key: &K) -> usize {
+        let mut hash_state = fxhash::FxHasher64::default();
+        hash_state.write_u64(self.hash_nonce);
+        key.hash(&mut hash_state);
+
+        let hash = hash_state.finish();
+        let shift = 64 - NCB;
+
+        (hash >> shift) as usize
+    }
 }
 
 #[inline]
 fn check_opt(ncb: u64, ncm: usize) -> bool {
     2_u64.pow(ncb as u32) == ncm as u64
-}
-
-#[inline]
-fn hash<V: Hash>(data: &V) -> u64 {
-    fxhash::hash64(data)
-}
-
-#[inline]
-fn determine_map(hash: u64) -> usize {
-    let shift = 64 - NCB;
-    (hash >> shift) as usize
 }
 
 pub struct DHashMapRef<'a, K, V>

@@ -1,6 +1,6 @@
 [package]
 name = "ccl"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -14,3 +14,4 @@ fxhash = "0.2.1"
 hashbrown = { version = "0.1.8", features = ["nightly"] }
 parking_lot = { version = "0.7.1", features = ["nightly"] }
 smallvec = "0.6.9"
+rand = "0.6.5"
