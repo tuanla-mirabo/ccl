@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT"
 repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
-description = "blazing fast concurrent collections for rust"
+description = "blazing fast datastructures for Rust"
 documentation = "https://docs.rs/ccl"
 
 [dependencies]
