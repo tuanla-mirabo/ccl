@@ -81,7 +81,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         if now.duration_since(*last_purged) > VALID_CHECK_INTERVAL {
             *last_purged = now;
 
-            self.storage.retain(check_to_evict);
+            self.storage.retain(|k, v| !check_to_evict(k, v));
         }
     }
 }
