@@ -1,4 +1,5 @@
-//! threadsafe concurrent timed cache based of dhashmap
+//! Threadsafe concurrent timed cache based of DHashMap.
+//! Handles loading and potential saving behind the scenes with user supplied functions.
 
 use crate::dhashmap::DHashMap;
 use parking_lot::Mutex;
@@ -9,6 +10,8 @@ pub const VALID_DURATION: time::Duration = time::Duration::from_secs(6 * 60 * 60
 pub const VALID_CHECK_INTERVAL: time::Duration = time::Duration::from_secs(30 * 60);
 pub const SAVE_INTERVAL: time::Duration = time::Duration::from_secs(3 * 60);
 
+/// Threadsafe concurrent timed cache based of DHashMap.
+/// Handles loading and potential saving behind the scenes with user supplied functions.
 pub struct TimedCache<K, V>
 where
     K: Hash + Eq + Clone,
@@ -24,6 +27,8 @@ where
 }
 
 impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
+    /// Creates a new TimedCache. Saving function may be empty if no custom saving functionality is needed.
+    /// Takes three duration arguments. Supply `None` to use the defaults.
     pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool, valid_duration: Option<time::Duration>, valid_check_interval: Option<time::Duration>, save_interval: Option<time::Duration>) -> Self {
         Self {
             storage: DHashMap::new(),
@@ -37,6 +42,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         }
     }
 
+    /// Load an item with a specified key. Intended to mainly be called from `map` and `map_mut`
     pub fn load_item(&self, k: &K) {
         if !self.storage.contains_key(k) {
             if let Some(v) = (self.load_item_fn)(k) {
@@ -46,12 +52,16 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         }
     }
 
+    /// Takes a closure with a normal reference as an argument and executes it.
+    /// The function will return the same value as the closure which means the function can be used to extract data.
     pub fn map<T, F: FnOnce(&V) -> T>(&self, k: &K, f: F) -> T {
         self.load_item(k);
         let data = self.storage.get(k).unwrap();
         f(&data.0)
     }
 
+    /// Takes a closure with a mutable reference as an argument and executes it.
+    /// The function will return the same value as the closure which means the function can be used to extract data.
     pub fn map_mut<T, F: FnMut(&mut V) -> T>(&self, k: &K, mut f: F) -> T {
         self.load_item(k);
         let mut data = self.storage.get_mut(k).unwrap();
@@ -59,6 +69,9 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         f(&mut data.0)
     }
 
+    /// Performance maintenance tasks like saving and evicting invalid entries.
+    /// May take significant time depending on amount of entries and the time complexity of saving each.
+    /// This is intended to be improved in a future iteration of TimedCache.
     pub fn do_check(&self) {
         let now = time::Instant::now();
         let mut last_saved = self.last_saved.lock();
