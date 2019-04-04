@@ -15,3 +15,5 @@ hashbrown = { version = "0.2.0", features = ["nightly"] }
 parking_lot = { version = "0.7.1", features = ["nightly"] }
 smallvec = "0.6.9"
 rand = "0.6.5"
+futures = "0.1.25"
+tokio = { version = "0.1.18", features = ["async-await-preview"] }

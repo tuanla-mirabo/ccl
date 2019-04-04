@@ -3,6 +3,8 @@ use std::hash::Hash;
 use crate::dhashmap::DHashMap;
 use parking_lot::Mutex;
 use std::time::{Instant, Duration};
+use std::future::Future;
+use std::pin::Pin;
 
 pub const VALID_DURATION: Duration = Duration::from_secs(3 * 60 * 60);
 pub const VALID_CHECK_INTERVAL: Duration = Duration::from_secs(15 * 60);
@@ -33,6 +35,10 @@ impl<V> Entry<V> {
 
     fn get(&self) -> &V {
         &self.data
+    }
+
+    fn get_mut(&mut self) -> &mut V {
+        &mut self.data
     }
 }
 
@@ -66,5 +72,57 @@ where
     load_item_fn: fn(&K) -> Option<V>,
 
     // item save function
-    save_item_fn: fn(&K, &V) -> bool,
+    save_item_fn: fn(&K, &V) -> Pin<Box<Future<Output = bool> + Send>>,
+}
+
+impl<K, V> HLTimedCacheInner<K, V>
+where
+    K: Hash + Eq + Clone
+{
+    pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> Pin<Box<Future<Output = bool> + Send>>) -> Self {
+        Self {
+            saved: DHashMap::new(),
+            unsaved: DHashMap::new(),
+            lookup: DHashMap::new(),
+            last_saved: Mutex::new(Instant::now()),
+            last_purged: Mutex::new(Instant::now()),
+            load_item_fn: load_item,
+            save_item_fn: save_item,
+        }
+    }
+
+    pub fn load_item(&self, key: &K) {
+        if !self.lookup.contains_key(key) {
+            if let Some(v) = (self.load_item_fn)(key) {
+                let v = Entry::new(v);
+                let h = fxhash::hash64(key);
+                self.lookup.insert(key.clone(), true);
+                self.saved.insert(h, v);
+            }
+        }
+    }
+
+    pub fn map<T, F: FnOnce(&V) -> T>(&self, key: &K, f: F) -> T {
+        self.load_item(key);
+        let s = self.lookup.get(key).unwrap();
+        let h = fxhash::hash64(key);
+        let data = if *s {
+            self.saved.get(&h).unwrap()
+        } else {
+            self.unsaved.get(&h).unwrap()
+        };
+        f(data.get())
+    }
+
+    pub fn map_mut<T, F: FnOnce(&mut V) -> T>(&self, key: &K, mut f: F) -> T {
+        self.load_item(key);
+        let s = self.lookup.get(key).unwrap();
+        let h = fxhash::hash64(key);
+        let mut data = if *s {
+            self.saved.get_mut(&h).unwrap()
+        } else {
+            self.unsaved.get_mut(&h).unwrap()
+        };
+        f(data.get_mut())
+    }
 }
