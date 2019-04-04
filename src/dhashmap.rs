@@ -13,11 +13,11 @@ use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::hash::Hasher;
 
-// the amount of bits to look at when determining maps
+/// The amount of bits to look at when determining maps.
 const NCB: u64 = 8;
 
-// number of maps, needs to be 2^NCB
-const NCM: usize = 256;
+// Amount of shards. Equals 2^NCB.
+const NCM: usize = 1 << NCB;
 
 #[derive(Default)]
 pub struct DHashMap<K, V>
@@ -182,5 +182,23 @@ where
     #[inline]
     fn deref_mut(&mut self) -> &mut V {
         self.lock.get_mut(self.key).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn insert_then_assert_4096() {
+        let map = DHashMap::new();
+
+        for i in 0..4096_i32 {
+            map.insert(i, i * 2);
+        }
+
+        for i in 0..4096_i32 {
+            assert_eq!(i * 2, *map.get(&i).unwrap());
+        }
     }
 }
