@@ -80,7 +80,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         f(&mut data.0)
     }
 
-    /// Performance maintenance tasks like saving and evicting invalid entries.
+    /// Performs maintenance tasks like saving and evicting invalid entries.
     /// May take significant time depending on amount of entries and the time complexity of saving each.
     /// This is intended to be improved in a future iteration of TimedCache.
     pub fn do_check(&self) {
