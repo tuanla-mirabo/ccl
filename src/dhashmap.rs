@@ -190,14 +190,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn insert_then_assert_4096() {
+    fn insert_then_assert_64() {
         let map = DHashMap::new();
 
-        for i in 0..4096_i32 {
+        for i in 0..64_i32 {
             map.insert(i, i * 2);
         }
 
-        for i in 0..4096_i32 {
+        for i in 0..64_i32 {
             assert_eq!(i * 2, *map.get(&i).unwrap());
         }
     }

@@ -11,9 +11,7 @@ documentation = "https://docs.rs/ccl"
 
 [dependencies]
 fxhash = "0.2.1"
-hashbrown = { version = "0.2.0", features = ["nightly"] }
-parking_lot = { version = "0.7.1", features = ["nightly"] }
+hashbrown = "0.2.0"
+parking_lot = "0.7.1"
 smallvec = "0.6.9"
 rand = "0.6.5"
-futures = "0.1.25"
-tokio = { version = "0.1.18", features = ["async-await-preview"] }
