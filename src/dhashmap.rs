@@ -81,10 +81,10 @@ where
     }
 
     #[inline]
-    pub fn remove(&self, key: &K) {
+    pub fn remove(&self, key: &K) -> Option<(K, V)> {
         let mapi = self.determine_map(&key);
         let mut submap = self.submaps[mapi].write();
-        submap.remove(key);
+        submap.remove_entry(key)
     }
 
     #[inline]
