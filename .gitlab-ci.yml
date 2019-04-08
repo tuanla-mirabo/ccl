@@ -4,6 +4,9 @@ stages:
   - check
   - test
 
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+
 check:
   stage: check
   script:
@@ -17,3 +20,8 @@ test:
     - rustc --version
     - cargo --version
     - cargo test --verbose
+
+cache:
+  paths:
+    - cargo/
+    - target/
