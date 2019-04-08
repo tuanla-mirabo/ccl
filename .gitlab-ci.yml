@@ -2,6 +2,7 @@ image: 'rust:latest'
 
 stages:
   - check
+  - test
 
 check:
   stage: check
@@ -9,3 +10,10 @@ check:
     - rustc --version
     - cargo --version
     - cargo check --verbose
+
+test:
+  stage: test
+  script:
+    - rustc --version
+    - cargo --version
+    - cargo test --verbose
