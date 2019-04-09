@@ -103,21 +103,21 @@ where
         });
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn submaps_read(
         &self,
     ) -> impl Iterator<Item = parking_lot::RwLockReadGuard<HashMap<K, V>>> {
         self.submaps.iter().map(|locked| locked.read())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn submaps_write(
         &self,
     ) -> impl Iterator<Item = parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
         self.submaps.iter().map(|locked| locked.write())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn determine_map(&self, key: &K) -> usize {
         let mut hash_state = fxhash::FxHasher64::default();
         hash_state.write_u64(self.hash_nonce);
@@ -130,7 +130,7 @@ where
     }
 }
 
-#[inline]
+#[inline(always)]
 fn check_opt(ncb: u64, ncm: usize) -> bool {
     2_u64.pow(ncb as u32) == ncm as u64
 }
@@ -149,7 +149,7 @@ where
 {
     type Target = V;
 
-    #[inline]
+    #[inline(always)]
     fn deref(&self) -> &V {
         self.lock.get(self.key).unwrap()
     }
@@ -169,7 +169,7 @@ where
 {
     type Target = V;
 
-    #[inline]
+    #[inline(always)]
     fn deref(&self) -> &V {
         self.lock.get(self.key).unwrap()
     }
@@ -179,7 +179,7 @@ impl<'a, K, V> DerefMut for DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    #[inline]
+    #[inline(always)]
     fn deref_mut(&mut self) -> &mut V {
         self.lock.get_mut(self.key).unwrap()
     }
