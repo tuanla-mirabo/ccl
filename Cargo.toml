@@ -1,6 +1,6 @@
 [package]
 name = "ccl"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -11,7 +11,7 @@ documentation = "https://docs.rs/ccl"
 
 [dependencies]
 fxhash = "0.2.1"
-hashbrown = "0.2.0"
+hashbrown = "0.2.1"
 parking_lot = "0.7.1"
 smallvec = "0.6.9"
 rand = "0.6.5"

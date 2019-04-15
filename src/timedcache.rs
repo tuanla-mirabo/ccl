@@ -73,7 +73,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
 
     /// Takes a closure with a mutable reference as an argument and executes it.
     /// The function will return the same value as the closure which means the function can be used to extract data.
-    pub fn map_mut<T, F: FnMut(&mut V) -> T>(&self, k: &K, mut f: F) -> T {
+    pub fn map_mut<T, F: FnOnce(&mut V) -> T>(&self, k: &K, f: F) -> T {
         self.load_item(k);
         let mut data = self.storage.get_mut(k).unwrap();
         data.2 = false;

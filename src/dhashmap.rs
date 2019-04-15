@@ -107,14 +107,14 @@ where
     pub fn submaps_read(
         &self,
     ) -> impl Iterator<Item = parking_lot::RwLockReadGuard<HashMap<K, V>>> {
-        self.submaps.iter().map(|locked| locked.read())
+        self.submaps.iter().map(RwLock::read)
     }
 
     #[inline(always)]
     pub fn submaps_write(
         &self,
     ) -> impl Iterator<Item = parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
-        self.submaps.iter().map(|locked| locked.write())
+        self.submaps.iter().map(RwLock::write)
     }
 
     #[inline(always)]
