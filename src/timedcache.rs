@@ -40,7 +40,13 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
     /// The `valid_check_interval` argument specifies how often expiry checking is done.
     ///
     /// The `save_interval` argument specifies how often to call the save function on unsaved entries.
-    pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool, valid_duration: Option<time::Duration>, valid_check_interval: Option<time::Duration>, save_interval: Option<time::Duration>) -> Self {
+    pub fn new(
+        load_item: fn(&K) -> Option<V>,
+        save_item: fn(&K, &V) -> bool,
+        valid_duration: Option<time::Duration>,
+        valid_check_interval: Option<time::Duration>,
+        save_interval: Option<time::Duration>,
+    ) -> Self {
         Self {
             storage: DHashMap::new(),
             load_item_fn: load_item,

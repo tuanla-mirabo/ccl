@@ -2,5 +2,5 @@
 //! at the moment ccl requires the use of a nightly toolchain
 
 pub mod dhashmap;
-pub mod timedcache;
 pub mod hltimedcache;
+pub mod timedcache;

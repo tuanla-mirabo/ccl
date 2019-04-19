@@ -10,8 +10,8 @@ use hashbrown::HashMap;
 use parking_lot::RwLock;
 use smallvec::SmallVec;
 use std::hash::Hash;
-use std::ops::{Deref, DerefMut};
 use std::hash::Hasher;
+use std::ops::{Deref, DerefMut};
 
 /// The amount of bits to look at when determining maps.
 const NCB: u64 = 8;

@@ -1,10 +1,10 @@
-use std::hash::Hash;
 use crate::dhashmap::DHashMap;
-use parking_lot::Mutex;
-use std::time::{Instant, Duration};
 use hashbrown::HashMap;
+use parking_lot::Mutex;
+use std::hash::Hash;
 use std::mem;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 pub const VALID_DURATION: Duration = Duration::from_secs(3 * 60 * 60);
 pub const VALID_CHECK_INTERVAL: Duration = Duration::from_secs(15 * 60);
@@ -44,14 +44,14 @@ impl<V> Entry<V> {
 
 pub struct HLTimedCache<K, V>
 where
-    K: Hash + Eq + Clone
+    K: Hash + Eq + Clone,
 {
     pub inner: Arc<HLTimedCacheInner<K, V>>,
 }
 
 impl<K, V> HLTimedCache<K, V>
 where
-    K: Hash + Eq + Clone
+    K: Hash + Eq + Clone,
 {
     pub fn new(load_item: fn(&K) -> Option<V>, save_item: fn(&K, &V) -> bool) -> Self {
         Self {
@@ -74,7 +74,7 @@ where
 
 pub struct HLTimedCacheInner<K, V>
 where
-    K: Hash + Eq + Clone
+    K: Hash + Eq + Clone,
 {
     // stores saved values
     saved: DHashMap<K, Entry<V>>,
@@ -188,7 +188,9 @@ mod tests {
             Some(key.to_string())
         }
 
-        fn save(_key: &u64, _value: &String) -> bool { true }
+        fn save(_key: &u64, _value: &String) -> bool {
+            true
+        }
 
         let cache = HLTimedCache::new(load, save);
 
