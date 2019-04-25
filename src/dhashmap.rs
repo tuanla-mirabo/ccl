@@ -5,7 +5,6 @@
 
 use hashbrown::HashMap;
 use parking_lot::RwLock;
-use smallvec::SmallVec;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
@@ -21,7 +20,7 @@ pub struct DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    submaps: SmallVec<[RwLock<HashMap<K, V>>; NCM]>,
+    submaps: Vec<RwLock<HashMap<K, V>>>,
     hash_nonce: u64,
 }
 
@@ -29,7 +28,7 @@ impl<'a, K: 'a, V: 'a> DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    #[inline]
+    #[inline(always)]
     pub fn new() -> Self {
         if !check_opt(NCB, NCM) {
             panic!("dhashmap params illegal");
@@ -41,24 +40,24 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn insert(&self, key: K, value: V) {
         let mapi = self.determine_map(&key);
-        let mut submap = self.submaps[mapi].write();
+        let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         submap.insert(key, value);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn contains_key(&self, key: &K) -> bool {
         let mapi = self.determine_map(&key);
-        let submap = self.submaps[mapi].read();
+        let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         submap.contains_key(&key)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
-        let submap = self.submaps[mapi].read();
+        let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         if submap.contains_key(&key) {
             Some(DHashMapRef { lock: submap, key })
         } else {
@@ -66,10 +65,10 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
-        let submap = self.submaps[mapi].write();
+        let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         if submap.contains_key(&key) {
             Some(DHashMapRefMut { lock: submap, key })
         } else {
@@ -77,14 +76,14 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn remove(&self, key: &K) -> Option<(K, V)> {
         let mapi = self.determine_map(&key);
-        let mut submap = self.submaps[mapi].write();
+        let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         submap.remove_entry(key)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn retain<F: Clone + FnMut(&K, &mut V) -> bool>(&self, f: F) {
         self.submaps.iter().for_each(|locked| {
             let mut submap = locked.write();
@@ -92,7 +91,7 @@ where
         });
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn clear(&self) {
         self.submaps.iter().for_each(|locked| {
             let mut submap = locked.write();
