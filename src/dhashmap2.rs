@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 
-// optimization ideas, smallvec for storing small amount inline, only use vecs when multiple elements, no bounds checking
+// optimization ideas, smallvec for storing small amount inline, only use vecs when multiple elements, no bounds checking, switch to rwlocks
 
 pub const TABLE_AMOUNT: usize = 4; // log2 of actual amount
 pub const DEFAULT_TABLE_CAPACITY: usize = 2; // log2 of actual amount
