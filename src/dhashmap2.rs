@@ -3,6 +3,9 @@ use std::hash::Hasher;
 use smallvec::SmallVec;
 use parking_lot::Mutex;
 use std::mem;
+use std::ops::{Deref, DerefMut};
+
+// optimization ideas, smallvec for storing small amount inline, only use vecs when multiple elements, no bounds checking
 
 pub const TABLE_AMOUNT: usize = 4; // log2 of actual amount
 pub const DEFAULT_TABLE_CAPACITY: usize = 2; // log2 of actual amount
@@ -48,7 +51,7 @@ where
 
     fn load_factor(&self) -> f64 {
         let true_capacity = 1 << self.capacity;
-        self.amount as f64 / true_capacity as f64
+        self.amount as f64 / f64::from(true_capacity)
     }
 
     fn is_overloaded(&self) -> bool {
@@ -108,6 +111,23 @@ where
 
     fn capacity(&self) -> usize {
         1 << self.capacity
+    }
+
+    fn find_location(&self, hash: u64) -> Option<(usize, usize)> {
+        let primary_index = calculate_index(hash, self.capacity);
+        let evec = &self.data[primary_index];
+        for (i, entry) in evec.iter().enumerate() {
+            let ekh = calculate_hash(&entry.key);
+            if ekh == hash {
+                return Some((primary_index, i));
+            }
+        }
+        None
+    }
+
+    fn get_with_location(&self, location: (usize, usize)) -> &Entry<K, V> {
+        let evec = &self.data[location.0];
+        &evec[location.1]
     }
 }
 
@@ -174,6 +194,40 @@ where
         let hash = calculate_hash(&k);
         let index = calculate_index(hash, TABLE_AMOUNT);
         self.tables[index].lock().insert(k, v, hash);
+    }
+
+    pub fn get(&self, k: &K) -> Option<DHashMap2Ref<K, V>> {
+        let hash = calculate_hash(&k);
+        let index = calculate_index(hash, TABLE_AMOUNT);
+        let lock = self.tables[index].lock();
+        if let Some(location) = lock.find_location(hash) {
+            Some(DHashMap2Ref {
+                lock,
+                location,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+pub struct DHashMap2Ref<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    lock: parking_lot::MutexGuard<'a, Table<K, V>>,
+    location: (usize, usize),
+}
+
+impl<'a, K, V> Deref for DHashMap2Ref<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Target = V;
+
+    #[inline(always)]
+    fn deref(&self) -> &V {
+        &self.lock.get_with_location(self.location).value
     }
 }
 
