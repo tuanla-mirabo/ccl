@@ -113,12 +113,11 @@ where
         1 << self.capacity
     }
 
-    fn find_location(&self, hash: u64) -> Option<(usize, usize)> {
+    fn find_location(&self, k: &K, hash: u64) -> Option<(usize, usize)> {
         let primary_index = calculate_index(hash, self.capacity);
         let evec = &self.data[primary_index];
         for (i, entry) in evec.iter().enumerate() {
-            let ekh = calculate_hash(&entry.key);
-            if ekh == hash {
+            if &entry.key == k {
                 return Some((primary_index, i));
             }
         }
@@ -128,6 +127,11 @@ where
     fn get_with_location(&self, location: (usize, usize)) -> &Entry<K, V> {
         let evec = &self.data[location.0];
         &evec[location.1]
+    }
+
+    fn get_mut_with_location(&mut self, location: (usize, usize)) -> &mut Entry<K, V> {
+        let evec = &mut self.data[location.0];
+        &mut evec[location.1]
     }
 }
 
@@ -200,8 +204,22 @@ where
         let hash = calculate_hash(&k);
         let index = calculate_index(hash, TABLE_AMOUNT);
         let lock = self.tables[index].lock();
-        if let Some(location) = lock.find_location(hash) {
+        if let Some(location) = lock.find_location(k, hash) {
             Some(DHashMap2Ref {
+                lock,
+                location,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&self, k: &K) -> Option<DHashMap2RefMut<K, V>> {
+        let hash = calculate_hash(&k);
+        let index = calculate_index(hash, TABLE_AMOUNT);
+        let lock = self.tables[index].lock();
+        if let Some(location) = lock.find_location(k, hash) {
+            Some(DHashMap2RefMut {
                 lock,
                 location,
             })
@@ -228,6 +246,36 @@ where
     #[inline(always)]
     fn deref(&self) -> &V {
         &self.lock.get_with_location(self.location).value
+    }
+}
+
+pub struct DHashMap2RefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    lock: parking_lot::MutexGuard<'a, Table<K, V>>,
+    location: (usize, usize),
+}
+
+impl<'a, K, V> Deref for DHashMap2RefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Target = V;
+
+    #[inline(always)]
+    fn deref(&self) -> &V {
+        &self.lock.get_with_location(self.location).value
+    }
+}
+
+impl<'a, K, V> DerefMut for DHashMap2RefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut V {
+        &mut self.lock.get_mut_with_location(self.location).value
     }
 }
 
