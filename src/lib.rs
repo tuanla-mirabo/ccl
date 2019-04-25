@@ -4,3 +4,4 @@
 pub mod dhashmap;
 pub mod hltimedcache;
 pub mod timedcache;
+pub mod dhashmap2;

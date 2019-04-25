@@ -1,10 +1,7 @@
-//! dhashmap is a threadsafe concurrent hashmap with good allround
-//! performance which trading memory usage for concurrency
+//! DHashMap is a threadsafe concurrent hashmap with good allround performance and a tuned for both reads and writes.
 //!
-//! the api mostly matches that of the standard library hashmap but there are some
-//! differences to due to the design of the hashmap
-//!
-//! initialization is fairly costly
+//! The API mostly matches that of the standard library hashmap but there are some
+//! differences to due to the design of the hashmap.
 
 use hashbrown::HashMap;
 use parking_lot::RwLock;

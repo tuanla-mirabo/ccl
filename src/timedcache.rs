@@ -1,6 +1,7 @@
 //! Threadsafe concurrent timed cache.
 //! Handles loading and potential saving behind the scenes with user supplied functions.
 //! Intended for use in high concurrency applications.
+//! Uses a DHashMap for storage and thus has good performance and latency on both reads and writes.
 
 use crate::dhashmap::DHashMap;
 use parking_lot::Mutex;
