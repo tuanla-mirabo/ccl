@@ -1,12 +1,12 @@
 [package]
 name = "ccl"
-version = "0.6.4"
+version = "1.0.0"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
-description = "blazing fast datastructures for Rust"
+description = "blazing fast concurrect datastructures for Rust"
 documentation = "https://docs.rs/ccl"
 
 [dependencies]
