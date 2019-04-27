@@ -9,9 +9,19 @@ homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 description = "blazing fast concurrect datastructures for Rust"
 documentation = "https://docs.rs/ccl"
 
+[features]
+default = ["std"]
+std = ["rand", "fxhash/std", "parking_lot"]
+no_std = ["spin", "hashbrown/nightly"]
+
+[dependencies.fxhash]
+git = "https://github.com/Restioson/fxhash/"
+rev = "ef12bbad6b9aefd1552d0eba8e4875933a2f9e3b"
+default-features = false
+
 [dependencies]
-fxhash = "0.2.1"
-hashbrown = "0.2.1"
-parking_lot = "0.7.1"
-smallvec = "0.6.9"
-rand = "0.6.5"
+spin = { version = "0.5", optional = true }
+hashbrown = { version = "0.2.1" }
+parking_lot = { version = "0.7.1", optional = true }
+smallvec = { version = "0.6.9", default-features = false }
+rand = { version = "0.6.5", optional = true }
