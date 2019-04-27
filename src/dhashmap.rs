@@ -4,10 +4,11 @@
 //! differences to due to the design of the hashmap.
 
 use hashbrown::HashMap;
-use parking_lot::RwLock;
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::ops::{Deref, DerefMut};
+use crate::parking_lot::RwLock;
+use crate::std::hash::Hash;
+use crate::std::hash::Hasher;
+use crate::std::ops::{Deref, DerefMut};
+use crate::std::vec::Vec;
 
 /// The amount of bits to look at when determining maps.
 const NCB: u64 = 8;
@@ -28,7 +29,8 @@ impl<'a, K: 'a, V: 'a> DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    #[inline(always)]
+    #[cfg(feature = "std")]
+    #[cfg_attr(feature = "std", inline(always))]
     pub fn new() -> Self {
         if !check_opt(NCB, NCM) {
             panic!("dhashmap params illegal");
@@ -37,6 +39,17 @@ where
         Self {
             submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect(),
             hash_nonce: rand::random(),
+        }
+    }
+
+    pub fn with_nonce(hash_nonce: u64) -> Self {
+        if !check_opt(NCB, NCM) {
+            panic!("dhashmap params illegal");
+        }
+
+        Self {
+            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect(),
+            hash_nonce,
         }
     }
 
@@ -102,14 +115,14 @@ where
     #[inline(always)]
     pub fn submaps_read(
         &self,
-    ) -> impl Iterator<Item = parking_lot::RwLockReadGuard<HashMap<K, V>>> {
+    ) -> impl Iterator<Item = crate::parking_lot::RwLockReadGuard<HashMap<K, V>>> {
         self.submaps.iter().map(RwLock::read)
     }
 
     #[inline(always)]
     pub fn submaps_write(
         &self,
-    ) -> impl Iterator<Item = parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
+    ) -> impl Iterator<Item = crate::parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
         self.submaps.iter().map(RwLock::write)
     }
 
@@ -135,7 +148,7 @@ pub struct DHashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+    pub lock: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
     pub key: &'a K,
 }
 
@@ -155,7 +168,7 @@ pub struct DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
+    pub lock: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
     pub key: &'a K,
 }
 
