@@ -87,6 +87,21 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         f(&mut data.0)
     }
 
+    /// Saves all entries. Useful to run before shutting down gracefully.
+    pub fn save_all(&self) {
+        let check_save_item = |k: &K, v: &mut (V, time::Instant, bool)| {
+            if !v.2 && (self.save_item_fn)(k, &v.0) {
+                v.2 = true;
+            }
+        };
+
+        self.storage.submaps_write().for_each(|mut submap| {
+            submap
+                .iter_mut()
+                .for_each(|(k, mut v)| check_save_item(&k, &mut v))
+        });
+    }
+
     /// Performs maintenance tasks like saving and evicting invalid entries.
     /// May take significant time depending on amount of entries and the time complexity of saving each.
     /// This is intended to be improved in a future iteration of TimedCache.
