@@ -13,7 +13,7 @@ const NCB: u64 = 8;
 // Amount of shards. Equals 2^NCB.
 const NCM: usize = 1 << NCB;
 
-/// DHashMap is a threadsafe concurrent hashmap with good allround performance and a tuned for both reads and writes.
+/// DHashMap is a threadsafe concurrent hashmap with good allround performance and is tuned for both reads and writes.
 ///
 /// The API mostly matches that of the standard library hashmap but there are some
 /// differences to due to the design of the hashmap.
