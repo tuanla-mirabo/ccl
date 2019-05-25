@@ -1,7 +1,4 @@
-//! DHashMap is a threadsafe concurrent hashmap with good allround performance and a tuned for both reads and writes.
-//!
-//! The API mostly matches that of the standard library hashmap but there are some
-//! differences to due to the design of the hashmap.
+//! Please see the struct level documentation.
 
 use hashbrown::HashMap;
 use crate::parking_lot::RwLock;
@@ -16,6 +13,16 @@ const NCB: u64 = 8;
 // Amount of shards. Equals 2^NCB.
 const NCM: usize = 1 << NCB;
 
+/// DHashMap is a threadsafe concurrent hashmap with good allround performance and a tuned for both reads and writes.
+///
+/// The API mostly matches that of the standard library hashmap but there are some
+/// differences to due to the design of the hashmap.
+///
+/// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
+/// submaps and then iterate over those.
+/// ```
+/// map.submaps_read().for_each(|s| s.iter().for_each(|(k, v)| myfn(k, v)));
+/// ```
 #[derive(Default)]
 pub struct DHashMap<K, V>
 where
@@ -29,6 +36,7 @@ impl<'a, K: 'a, V: 'a> DHashMap<K, V>
 where
     K: Hash + Eq,
 {
+    /// Create a new DHashMap. Doesn't allocate space for elements until it starts filling up.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", inline(always))]
     pub fn new() -> Self {
@@ -42,6 +50,7 @@ where
         }
     }
 
+    /// Create a new DHashMap with a specified nonce. Not recommended.
     pub fn with_nonce(hash_nonce: u64) -> Self {
         if !check_opt(NCB, NCM) {
             panic!("dhashmap params illegal");
@@ -53,6 +62,7 @@ where
         }
     }
 
+    /// Insert an element into the map.
     #[inline(always)]
     pub fn insert(&self, key: K, value: V) {
         let mapi = self.determine_map(&key);
@@ -60,6 +70,7 @@ where
         submap.insert(key, value);
     }
 
+    /// Check if the map contains the specified key.
     #[inline(always)]
     pub fn contains_key(&self, key: &K) -> bool {
         let mapi = self.determine_map(&key);
@@ -67,6 +78,7 @@ where
         submap.contains_key(&key)
     }
 
+    /// Get a shared reference to an element contained within the map.
     #[inline(always)]
     pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
@@ -78,6 +90,7 @@ where
         }
     }
 
+    /// Get a unique reference to an element contained within the map.
     #[inline(always)]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
@@ -89,6 +102,7 @@ where
         }
     }
 
+    /// Remove an element from the map if it exists. Will return the K, V pair.
     #[inline(always)]
     pub fn remove(&self, key: &K) -> Option<(K, V)> {
         let mapi = self.determine_map(&key);
@@ -96,6 +110,7 @@ where
         submap.remove_entry(key)
     }
 
+    /// Retain all elements that the specified function returns `true` for.
     #[inline(always)]
     pub fn retain<F: Clone + FnMut(&K, &mut V) -> bool>(&self, f: F) {
         self.submaps.iter().for_each(|locked| {
@@ -104,6 +119,7 @@ where
         });
     }
 
+    /// Clear all elements from the map.
     #[inline(always)]
     pub fn clear(&self) {
         self.submaps.iter().for_each(|locked| {
@@ -112,6 +128,7 @@ where
         });
     }
 
+    /// Iterate over submaps in a read only fashion.
     #[inline(always)]
     pub fn submaps_read(
         &self,
@@ -119,6 +136,7 @@ where
         self.submaps.iter().map(RwLock::read)
     }
 
+    /// Iterate over submaps in a read-write fashion.
     #[inline(always)]
     pub fn submaps_write(
         &self,

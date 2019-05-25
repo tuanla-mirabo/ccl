@@ -1,5 +1,6 @@
-//! ccl is a library with fast and concurrect data structures for rust
-//! at the moment ccl requires the use of a nightly toolchain
+//! ccl is a library containing fast and concurrent hashmaps and caches for a variety of uses.
+//! ccl now works on stable and also has no_std support.
+//! HLTimedCache is experimental at the moment and should probably not be used. Use TimedCache instead.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(not(feature = "std"))]
