@@ -21,7 +21,7 @@ const NCM: usize = 1 << NCB;
 /// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
 /// submaps and then iterate over those.
 /// ```
-/// map.submaps_read().for_each(|s| s.iter().for_each(|(k, v)| myfn(k, v)));
+/// map.tables_read().for_each(|s| s.iter().for_each(|(k, v)| myfn(k, v)));
 /// ```
 #[derive(Default)]
 pub struct DHashMap<K, V>
@@ -130,18 +130,18 @@ where
 
     /// Iterate over submaps in a read only fashion.
     #[inline(always)]
-    pub fn submaps_read(
+    pub fn tables_read(
         &self,
-    ) -> impl Iterator<Item = crate::parking_lot::RwLockReadGuard<HashMap<K, V>>> {
-        self.submaps.iter().map(RwLock::read)
+    ) -> impl Iterator<Item = SMRInterface<K, V>> {
+        self.submaps.iter().map(|t| SMRInterface::new(t.read()))
     }
 
     /// Iterate over submaps in a read-write fashion.
     #[inline(always)]
-    pub fn submaps_write(
+    pub fn tables_write(
         &self,
-    ) -> impl Iterator<Item = crate::parking_lot::RwLockWriteGuard<HashMap<K, V>>> {
-        self.submaps.iter().map(RwLock::write)
+    ) -> impl Iterator<Item = SMRWInterface<K, V>> {
+        self.submaps.iter().map(|t| SMRWInterface::new(t.write()))
     }
 
     #[inline(always)]
@@ -160,6 +160,54 @@ where
 #[inline(always)]
 fn check_opt(ncb: u64, ncm: usize) -> bool {
     2_u64.pow(ncb as u32) == ncm as u64
+}
+
+pub struct SMRInterface<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    inner: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+}
+
+impl<'a, K: 'a, V: 'a> SMRInterface<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    fn new(inner: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
+        Self {
+            inner,
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+        self.inner.iter()
+    }
+}
+
+pub struct SMRWInterface<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    inner: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
+}
+
+impl<'a, K: 'a, V: 'a> SMRWInterface<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    fn new(inner: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
+        Self {
+            inner,
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+        self.inner.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.inner.iter_mut()
+    }
 }
 
 pub struct DHashMapRef<'a, K, V>

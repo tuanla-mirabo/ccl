@@ -95,7 +95,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
             }
         };
 
-        self.storage.submaps_write().for_each(|mut submap| {
+        self.storage.tables_write().for_each(|mut submap| {
             submap
                 .iter_mut()
                 .for_each(|(k, mut v)| check_save_item(&k, &mut v))
@@ -123,7 +123,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         if now.duration_since(*last_saved) > self.save_interval {
             *last_saved = now;
 
-            self.storage.submaps_write().for_each(|mut submap| {
+            self.storage.tables_write().for_each(|mut submap| {
                 submap
                     .iter_mut()
                     .for_each(|(k, mut v)| check_save_item(&k, &mut v))
