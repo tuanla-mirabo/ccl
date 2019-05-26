@@ -26,7 +26,7 @@ pub struct DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    submaps: Vec<RwLock<HashMap<K, V>>>,
+    submaps: Box<[RwLock<HashMap<K, V>>]>,
     hash_nonce: u64,
 }
 
@@ -43,7 +43,7 @@ where
         }
 
         Self {
-            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect(),
+            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce: rand::random(),
         }
     }
