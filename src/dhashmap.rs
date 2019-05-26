@@ -20,9 +20,7 @@ const NCM: usize = 1 << NCB;
 ///
 /// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
 /// submaps and then iterate over those.
-/// ```
-/// map.tables_read().for_each(|s| s.iter().for_each(|(k, v)| myfn(k, v)));
-/// ```
+
 #[derive(Default)]
 pub struct DHashMap<K, V>
 where
@@ -128,6 +126,12 @@ where
         });
     }
 
+    /// Apply a function to every item in the map.
+    #[inline(always)]
+    pub fn alter<F: FnMut((&K, &mut V)) + Copy>(&self, f: F) {
+        self.tables_write().for_each(|mut t| t.iter_mut().for_each(f))
+    }
+
     /// Iterate over submaps in a read only fashion.
     #[inline(always)]
     pub fn tables_read(
@@ -179,6 +183,7 @@ where
         }
     }
 
+    #[inline(always)]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.inner.iter()
     }
@@ -201,10 +206,12 @@ where
         }
     }
 
+    #[inline(always)]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.inner.iter()
     }
 
+    #[inline(always)]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
         self.inner.iter_mut()
     }
@@ -272,8 +279,10 @@ mod tests {
             map.insert(i, i * 2);
         }
 
+        map.alter(|(_, v)| *v *= 2);
+
         for i in 0..64_i32 {
-            assert_eq!(i * 2, *map.get(&i).unwrap());
+            assert_eq!(i * 4, *map.get(&i).unwrap());
         }
     }
 }
