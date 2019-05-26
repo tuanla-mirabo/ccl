@@ -13,11 +13,11 @@ const DATA2: u64 = 192;
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 lazy_static! {
-    static ref DATA1MAP: DHashMap<u64, [u128; 16]> = dhashmap_ccl_rayon_insert_only_20k_u64_u128x16();
-    static ref DATA2MAP: DHashMap<u64, u64> = dhashmap_ccl_rayon_insert_only_20k_u64_u64();
+    static ref DATA1MAP: DHashMap<u64, [u128; 16]> = dhashmap_ccl_rayon_insert_only_100k_u64_u128x16();
+    static ref DATA2MAP: DHashMap<u64, u64> = dhashmap_ccl_rayon_insert_only_100k_u64_u64();
 }
 
-fn dhashmap_ccl_rayon_insert_only_20k_u64_u64() -> DHashMap<u64, u64> {
+fn dhashmap_ccl_rayon_insert_only_100k_u64_u64() -> DHashMap<u64, u64> {
     let map = DHashMap::with_capacity(100000);
 
     (0..100000_u64).into_par_iter().for_each(|i| {
@@ -27,7 +27,7 @@ fn dhashmap_ccl_rayon_insert_only_20k_u64_u64() -> DHashMap<u64, u64> {
     map
 }
 
-fn dhashmap_ccl_rayon_insert_only_20k_u64_u128x16() -> DHashMap<u64, [u128; 16]> {
+fn dhashmap_ccl_rayon_insert_only_100k_u64_u128x16() -> DHashMap<u64, [u128; 16]> {
     let map = DHashMap::with_capacity(100000);
 
     (0..100000_u64).into_par_iter().for_each(|i| {
@@ -37,23 +37,23 @@ fn dhashmap_ccl_rayon_insert_only_20k_u64_u128x16() -> DHashMap<u64, [u128; 16]>
     map
 }
 
-fn dhashmap_ccl_rayon_read_only_20k_u64_u64(map: &DHashMap<u64, u64>) {
+fn dhashmap_ccl_rayon_read_only_100k_u64_u64(map: &DHashMap<u64, u64>) {
     (0..100000_u64).into_par_iter().for_each(|i| {
         assert!(*map.get(&i).unwrap() == DATA2);
     });
 }
 
-fn dhashmap_ccl_rayon_read_only_20k_u64_u128x16(map: &DHashMap<u64, [u128; 16]>) {
+fn dhashmap_ccl_rayon_read_only_100k_u64_u128x16(map: &DHashMap<u64, [u128; 16]>) {
     (0..100000_u64).into_par_iter().for_each(|i| {
         assert!(*map.get(&i).unwrap() == DATA1);
     });
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("dhashmap_ccl_rayon_insert_only_20k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_20k_u64_u64()));
-    c.bench_function("dhashmap_ccl_rayon_insert_only_20k_u64_u128x16", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_20k_u64_u128x16()));
-    c.bench_function("dhashmap_ccl_rayon_read_only_20k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_read_only_20k_u64_u64(&DATA2MAP)));
-    c.bench_function("dhashmap_ccl_rayon_read_only_20k_u64_u128x16", |b| b.iter(|| dhashmap_ccl_rayon_read_only_20k_u64_u128x16(&DATA1MAP)));
+    c.bench_function("dhashmap_ccl_rayon_insert_only_100k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_100k_u64_u64()));
+    c.bench_function("dhashmap_ccl_rayon_insert_only_100k_u64_u128x16", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_100k_u64_u128x16()));
+    c.bench_function("dhashmap_ccl_rayon_read_only_100k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_read_only_100k_u64_u64(&DATA2MAP)));
+    c.bench_function("dhashmap_ccl_rayon_read_only_100k_u64_u128x16", |b| b.iter(|| dhashmap_ccl_rayon_read_only_100k_u64_u128x16(&DATA1MAP)));
 }
 
 criterion_group!(benches, criterion_benchmark);
