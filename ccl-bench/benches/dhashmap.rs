@@ -50,8 +50,6 @@ fn dhashmap_ccl_rayon_read_only_20k_u64_u128x16(map: &DHashMap<u64, [u128; 16]>)
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(16).build_global().unwrap();
-
     c.bench_function("dhashmap_ccl_rayon_insert_only_20k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_20k_u64_u64()));
     c.bench_function("dhashmap_ccl_rayon_insert_only_20k_u64_u128x16", |b| b.iter(|| dhashmap_ccl_rayon_insert_only_20k_u64_u128x16()));
     c.bench_function("dhashmap_ccl_rayon_read_only_20k_u64_u64", |b| b.iter(|| dhashmap_ccl_rayon_read_only_20k_u64_u64(&DATA2MAP)));
