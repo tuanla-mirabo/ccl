@@ -1,3 +1,5 @@
 /target
 **/*.rs.bk
 Cargo.lock
+/ccl-bench/target
+/ccl-bench/**/*.rs.bk

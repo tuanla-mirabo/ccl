@@ -49,6 +49,22 @@ where
         }
     }
 
+    /// Create a new DHashMap with a specified capacity.
+    #[cfg(feature = "std")]
+    #[cfg_attr(feature = "std", inline(always))]
+    pub fn with_capacity(capacity: usize) -> Self {
+        if !check_opt(NCB, NCM) {
+            panic!("dhashmap params illegal");
+        }
+
+        let cpm = capacity / NCM;
+
+        Self {
+            submaps: (0..NCM).map(|_| RwLock::new(HashMap::with_capacity(cpm))).collect::<Vec<_>>().into_boxed_slice(),
+            hash_nonce: rand::random(),
+        }
+    }
+
     /// Create a new DHashMap with a specified nonce. Not recommended.
     pub fn with_nonce(hash_nonce: u64) -> Self {
         if !check_opt(NCB, NCM) {
@@ -56,7 +72,7 @@ where
         }
 
         Self {
-            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect(),
+            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce,
         }
     }
