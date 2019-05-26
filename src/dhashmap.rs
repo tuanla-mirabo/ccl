@@ -6,6 +6,7 @@ use crate::std::hash::Hash;
 use crate::std::hash::Hasher;
 use crate::std::ops::{Deref, DerefMut};
 use crate::std::vec::Vec;
+use crate::std::boxed::Box;
 
 /// The amount of bits to look at when determining maps.
 const NCB: u64 = 8;
