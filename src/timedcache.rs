@@ -49,7 +49,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         save_interval: Option<time::Duration>,
     ) -> Self {
         Self {
-            storage: DHashMap::new(),
+            storage: DHashMap::default(),
             load_item_fn: load_item,
             save_item_fn: save_item,
             last_saved: Mutex::new(time::Instant::now()),

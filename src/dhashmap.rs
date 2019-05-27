@@ -8,11 +8,8 @@ use crate::std::ops::{Deref, DerefMut};
 use crate::std::vec::Vec;
 use crate::std::boxed::Box;
 
-/// The amount of bits to look at when determining maps.
+/// The amount of bits to look at when determining maps. Default
 const NCB: u64 = 8;
-
-// Amount of shards. Equals 2^NCB.
-const NCM: usize = 1 << NCB;
 
 /// DHashMap is a threadsafe concurrent hashmap with good allround performance and is tuned for both reads and writes.
 ///
@@ -22,11 +19,11 @@ const NCM: usize = 1 << NCB;
 /// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
 /// submaps and then iterate over those.
 
-#[derive(Default)]
 pub struct DHashMap<K, V>
 where
     K: Hash + Eq,
 {
+    ncb: usize,
     submaps: Box<[RwLock<HashMap<K, V>>]>,
     hash_nonce: u64,
 }
@@ -36,15 +33,15 @@ where
     K: Hash + Eq,
 {
     /// Create a new DHashMap. Doesn't allocate space for elements until it starts filling up.
+    /// The amount of submaps used is based on the formula 2^n where n is the value passed. 256 or 8 as a value is the default.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", inline(always))]
-    pub fn new() -> Self {
-        if !check_opt(NCB, NCM) {
-            panic!("dhashmap params illegal");
-        }
+    pub fn new(submaps_exp_of_two_pow: usize) -> Self {
+        let ncm = 1 << submaps_exp_of_two_pow;
 
         Self {
-            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
+            ncb: submaps_exp_of_two_pow,
+            submaps: (0..ncm).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce: rand::random(),
         }
     }
@@ -52,27 +49,25 @@ where
     /// Create a new DHashMap with a specified capacity.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", inline(always))]
-    pub fn with_capacity(capacity: usize) -> Self {
-        if !check_opt(NCB, NCM) {
-            panic!("dhashmap params illegal");
-        }
+    pub fn with_capacity(submaps_exp_of_two_pow: usize, capacity: usize) -> Self {
 
-        let cpm = capacity / NCM;
+        let ncm = 1 << submaps_exp_of_two_pow;
+        let cpm = capacity / ncm;
 
         Self {
-            submaps: (0..NCM).map(|_| RwLock::new(HashMap::with_capacity(cpm))).collect::<Vec<_>>().into_boxed_slice(),
+            ncb: submaps_exp_of_two_pow,
+            submaps: (0..ncm).map(|_| RwLock::new(HashMap::with_capacity(cpm))).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce: rand::random(),
         }
     }
 
     /// Create a new DHashMap with a specified nonce. Not recommended.
-    pub fn with_nonce(hash_nonce: u64) -> Self {
-        if !check_opt(NCB, NCM) {
-            panic!("dhashmap params illegal");
-        }
+    pub fn with_nonce(submaps_exp_of_two_pow: usize, hash_nonce: u64) -> Self {
+        let ncm = 1 << submaps_exp_of_two_pow;
 
         Self {
-            submaps: (0..NCM).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
+            ncb: submaps_exp_of_two_pow,
+            submaps: (0..ncm).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce,
         }
     }
@@ -172,15 +167,19 @@ where
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
-        let shift = 64 - NCB;
+        let shift = 64 - self.ncb;
 
         (hash >> shift) as usize
     }
 }
 
-#[inline(always)]
-fn check_opt(ncb: u64, ncm: usize) -> bool {
-    2_u64.pow(ncb as u32) == ncm as u64
+impl<K, V> Default for DHashMap<K, V>
+where
+    K: Hash + Eq,
+{
+    fn default() -> Self {
+        Self::new(NCB as usize)
+    }
 }
 
 pub struct SMRInterface<'a, K, V>
@@ -289,16 +288,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn insert_then_assert_64() {
-        let map = DHashMap::new();
+    fn insert_then_assert_1024() {
+        let map = DHashMap::new(4);
 
-        for i in 0..64_i32 {
+        for i in 0..1024_i32 {
             map.insert(i, i * 2);
         }
 
         map.alter(|(_, v)| *v *= 2);
 
-        for i in 0..64_i32 {
+        for i in 0..1024_i32 {
             assert_eq!(i * 4, *map.get(&i).unwrap());
         }
     }

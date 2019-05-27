@@ -18,7 +18,7 @@ lazy_static! {
 }
 
 fn dhashmap_ccl_rayon_insert_only_100k_u64_u64() -> DHashMap<u64, u64> {
-    let map = DHashMap::with_capacity(100000);
+    let map = DHashMap::with_capacity(8, 100000);
 
     (0..100000_u64).into_par_iter().for_each(|i| {
         map.insert(i, DATA2);
@@ -28,7 +28,7 @@ fn dhashmap_ccl_rayon_insert_only_100k_u64_u64() -> DHashMap<u64, u64> {
 }
 
 fn dhashmap_ccl_rayon_insert_only_100k_u64_u128x16() -> DHashMap<u64, [u128; 16]> {
-    let map = DHashMap::with_capacity(100000);
+    let map = DHashMap::with_capacity(8, 100000);
 
     (0..100000_u64).into_par_iter().for_each(|i| {
         map.insert(i, DATA1);

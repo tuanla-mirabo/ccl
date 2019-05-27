@@ -2,9 +2,10 @@
 
 blazing fast data structures for Rust
 
-## performance?
+## cpu performance?
 
 Here are some benchmarks for the concurrent `DHashMap` hashmap. You can run them yourself by executing `cargo bench` in the ccl-bench directory.
+Benchmarks are made with the default settings.
 
 ```
 Xeon 2.1Ghz 16C/32T Hetzner Cloud CXX51
