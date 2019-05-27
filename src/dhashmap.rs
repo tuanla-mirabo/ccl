@@ -150,8 +150,8 @@ where
 
     /// Apply a function to every item in the map.
     #[inline(always)]
-    pub fn alter<F: FnMut((&K, &mut V)) + Copy>(&self, f: F) {
-        self.tables_write().for_each(|mut t| t.iter_mut().for_each(f))
+    pub fn alter<F: FnMut((&K, &mut V)) + Clone>(&self, f: F) {
+        self.tables_write().for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
     /// Iterate over submaps in a read only fashion.
