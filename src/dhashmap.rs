@@ -17,7 +17,11 @@ const NCB: u64 = 8;
 /// differences to due to the design of the hashmap.
 ///
 /// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
-/// submaps and then iterate over those.
+/// subtables and then iterate over those.
+///
+/// Unsafe is used in all operations that require accessing a subtables to avoid bounds checking.
+/// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of subtables.
+/// The amount of subtables cannot be altered after creation in any way.
 
 pub struct DHashMap<K, V>
 where
@@ -34,6 +38,8 @@ where
 {
     /// Create a new DHashMap. Doesn't allocate space for elements until it starts filling up.
     /// The amount of submaps used is based on the formula 2^n where n is the value passed. 256 or 8 as a value is the default.
+    ///
+    /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", inline(always))]
     pub fn new(submaps_exp_of_two_pow: usize) -> Self {
@@ -47,6 +53,8 @@ where
     }
 
     /// Create a new DHashMap with a specified capacity.
+    ///
+    /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", inline(always))]
     pub fn with_capacity(submaps_exp_of_two_pow: usize, capacity: usize) -> Self {
@@ -62,6 +70,8 @@ where
     }
 
     /// Create a new DHashMap with a specified nonce. Not recommended.
+    ///
+    /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     pub fn with_nonce(submaps_exp_of_two_pow: usize, hash_nonce: u64) -> Self {
         let ncm = 1 << submaps_exp_of_two_pow;
 
