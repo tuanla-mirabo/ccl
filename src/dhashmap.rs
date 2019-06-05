@@ -31,8 +31,8 @@ impl<'a, K: 'a, V: 'a> DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    /// Create a new DHashMap. Doesn't allocate space for elements until it starts filling up.
-    /// The amount of submaps used is based on the formula 2^n where n is the value passed. 256 or 8 as a value is the default.
+    /// Create a new DHashMap.
+    /// The amount of submaps used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     pub fn new(submaps_exp_of_two_pow: usize) -> Self {
@@ -165,6 +165,7 @@ impl<K, V> Default for DHashMap<K, V>
 where
     K: Hash + Eq,
 {
+    /// Creates a new DHashMap and automagically determines the optimal amount of shards.
     fn default() -> Self {
         let vcount = num_cpus::get() * 4;
 
