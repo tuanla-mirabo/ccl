@@ -61,7 +61,7 @@ where
     }
 
     /// Insert an element into the map.
-    #[inline(always)]
+    #[inline]
     pub fn insert(&self, key: K, value: V) {
         let mapi = self.determine_map(&key);
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -69,7 +69,7 @@ where
     }
 
     /// Check if the map contains the specified key.
-    #[inline(always)]
+    #[inline]
     pub fn contains_key(&self, key: &K) -> bool {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -77,7 +77,7 @@ where
     }
 
     /// Get a shared reference to an element contained within the map.
-    #[inline(always)]
+    #[inline]
     pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -89,7 +89,7 @@ where
     }
 
     /// Get a unique reference to an element contained within the map.
-    #[inline(always)]
+    #[inline]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -101,7 +101,7 @@ where
     }
 
     /// Remove an element from the map if it exists. Will return the K, V pair.
-    #[inline(always)]
+    #[inline]
     pub fn remove(&self, key: &K) -> Option<(K, V)> {
         let mapi = self.determine_map(&key);
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -109,7 +109,7 @@ where
     }
 
     /// Retain all elements that the specified function returns `true` for.
-    #[inline(always)]
+    #[inline]
     pub fn retain<F: Clone + FnMut(&K, &mut V) -> bool>(&self, f: F) {
         self.submaps.iter().for_each(|locked| {
             let mut submap = locked.write();
@@ -118,7 +118,7 @@ where
     }
 
     /// Clear all elements from the map.
-    #[inline(always)]
+    #[inline]
     pub fn clear(&self) {
         self.submaps.iter().for_each(|locked| {
             let mut submap = locked.write();
@@ -127,13 +127,13 @@ where
     }
 
     /// Apply a function to every item in the map.
-    #[inline(always)]
+    #[inline]
     pub fn alter<F: FnMut((&K, &mut V)) + Clone>(&self, f: F) {
         self.tables_write().for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
     /// Iterate over submaps in a read only fashion.
-    #[inline(always)]
+    #[inline]
     pub fn tables_read(
         &self,
     ) -> impl Iterator<Item = SMRInterface<K, V>> {
@@ -141,15 +141,15 @@ where
     }
 
     /// Iterate over submaps in a read-write fashion.
-    #[inline(always)]
+    #[inline]
     pub fn tables_write(
         &self,
     ) -> impl Iterator<Item = SMRWInterface<K, V>> {
         self.submaps.iter().map(|t| SMRWInterface::new(t.write()))
     }
 
-    #[inline(always)]
-    pub fn determine_map(&self, key: &K) -> usize {
+    #[inline]
+    fn determine_map(&self, key: &K) -> usize {
         let mut hash_state = fxhash::FxHasher64::default();
         hash_state.write_u64(self.hash_nonce);
         key.hash(&mut hash_state);
@@ -192,14 +192,14 @@ impl<'a, K: 'a, V: 'a> SMRInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    #[inline(always)]
+    #[inline]
     fn new(inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
         Self {
             inner,
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.inner.iter()
     }
@@ -216,19 +216,19 @@ impl<'a, K: 'a, V: 'a> SMRWInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    #[inline(always)]
+    #[inline]
     fn new(inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
         Self {
             inner,
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.inner.iter()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
         self.inner.iter_mut()
     }
@@ -248,7 +248,7 @@ where
 {
     type Target = V;
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &V {
         self.lock.get(self.key).unwrap()
     }
@@ -268,7 +268,7 @@ where
 {
     type Target = V;
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &V {
         self.lock.get(self.key).unwrap()
     }
@@ -278,7 +278,7 @@ impl<'a, K, V> DerefMut for DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    #[inline(always)]
+    #[inline]
     fn deref_mut(&mut self) -> &mut V {
         self.lock.get_mut(self.key).unwrap()
     }
