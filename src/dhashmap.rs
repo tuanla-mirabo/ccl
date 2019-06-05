@@ -6,17 +6,17 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 
-/// DHashMap is a threadsafe concurrent hashmap with good allround performance and is tuned for both reads and writes.
+/// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
 /// The API mostly matches that of the standard library hashmap but there are some
-/// differences to due to the design of the hashmap.
+/// differences to due to the design.
 ///
-/// Due to design limitations you cannot iterate over the map normally. Please use one of the below iterator functions to iterate over contained
-/// subtables and then iterate over those.
+/// One of those limits is iteration, you cannot iterate over the elements directly.
+/// Instead you have to iterate over chunks which can iterate over KV pairs.
 ///
-/// Unsafe is used in all operations that require accessing a subtables to avoid bounds checking.
-/// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of subtables.
-/// The amount of subtables cannot be altered after creation in any way.
+/// Unsafe is used to avoid bounds checking when accessing chunks.
+/// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of chunks.
+/// The amount of chunks cannot be altered after creation in any way.
 
 pub struct DHashMap<K, V>
 where
@@ -32,7 +32,7 @@ where
     K: Hash + Eq,
 {
     /// Create a new DHashMap.
-    /// The amount of submaps used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
+    /// The amount of chunks used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     pub fn new(submaps_exp_of_two_pow: usize) -> Self {
@@ -132,7 +132,7 @@ where
         self.tables_write().for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
-    /// Iterate over submaps in a read only fashion.
+    /// Iterate over chunks in a read only fashion.
     #[inline]
     pub fn tables_read(
         &self,
@@ -140,7 +140,7 @@ where
         self.submaps.iter().map(|t| SMRInterface::new(t.read()))
     }
 
-    /// Iterate over submaps in a read-write fashion.
+    /// Iterate over chunks in a read-write fashion.
     #[inline]
     pub fn tables_write(
         &self,
@@ -165,7 +165,7 @@ impl<K, V> Default for DHashMap<K, V>
 where
     K: Hash + Eq,
 {
-    /// Creates a new DHashMap and automagically determines the optimal amount of shards.
+    /// Creates a new DHashMap and automagically determines the optimal amount of chunks.
     fn default() -> Self {
         let vcount = num_cpus::get() * 4;
 
@@ -182,6 +182,8 @@ where
     }
 }
 
+
+/// A read only iterator interface to a chunk.
 pub struct SMRInterface<'a, K, V>
 where
     K: Hash + Eq,
@@ -206,6 +208,7 @@ where
     }
 }
 
+/// A read-write iterator interface to a chunk.
 pub struct SMRWInterface<'a, K, V>
 where
     K: Hash + Eq,
@@ -235,12 +238,13 @@ where
     }
 }
 
+/// A shared reference into a DHashMap.
 pub struct DHashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
-    pub key: &'a K,
+    lock: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+    key: &'a K,
 }
 
 impl<'a, K, V> Deref for DHashMapRef<'a, K, V>
@@ -255,6 +259,7 @@ where
     }
 }
 
+/// A unique reference into a DHashMap.
 pub struct DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
