@@ -36,7 +36,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
         let slot = &self.table[idx];
         let guard = &epoch::pin();
         let new = Owned::new(Entry::Occupied(Item { key, value }));
-        let _old = slot.swap(new, Ordering::SeqCst, guard);
+        let old = slot.swap(new, Ordering::SeqCst, guard);
+        unsafe { guard.defer_destroy(old); }
     }
 
     pub fn get(&'a self, key: &K) -> Option<MapRef<V>> {
