@@ -1,15 +1,10 @@
 //! Please see the struct level documentation.
 
 use hashbrown::HashMap;
-use crate::parking_lot::RwLock;
-use crate::std::hash::Hash;
-use crate::std::hash::Hasher;
-use crate::std::ops::{Deref, DerefMut};
-use crate::std::vec::Vec;
-use crate::std::boxed::Box;
-
-/// The amount of bits to look at when determining maps. Default
-const NCB: u64 = 8;
+use parking_lot::RwLock;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::ops::{Deref, DerefMut};
 
 /// DHashMap is a threadsafe concurrent hashmap with good allround performance and is tuned for both reads and writes.
 ///
@@ -40,8 +35,6 @@ where
     /// The amount of submaps used is based on the formula 2^n where n is the value passed. 256 or 8 as a value is the default.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
-    #[cfg(feature = "std")]
-    #[cfg_attr(feature = "std", inline(always))]
     pub fn new(submaps_exp_of_two_pow: usize) -> Self {
         let ncm = 1 << submaps_exp_of_two_pow;
 
@@ -55,8 +48,6 @@ where
     /// Create a new DHashMap with a specified capacity.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
-    #[cfg(feature = "std")]
-    #[cfg_attr(feature = "std", inline(always))]
     pub fn with_capacity(submaps_exp_of_two_pow: usize, capacity: usize) -> Self {
 
         let ncm = 1 << submaps_exp_of_two_pow;
@@ -66,19 +57,6 @@ where
             ncb: submaps_exp_of_two_pow,
             submaps: (0..ncm).map(|_| RwLock::new(HashMap::with_capacity(cpm))).collect::<Vec<_>>().into_boxed_slice(),
             hash_nonce: rand::random(),
-        }
-    }
-
-    /// Create a new DHashMap with a specified nonce. Not recommended.
-    ///
-    /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
-    pub fn with_nonce(submaps_exp_of_two_pow: usize, hash_nonce: u64) -> Self {
-        let ncm = 1 << submaps_exp_of_two_pow;
-
-        Self {
-            ncb: submaps_exp_of_two_pow,
-            submaps: (0..ncm).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
-            hash_nonce,
         }
     }
 
@@ -188,7 +166,18 @@ where
     K: Hash + Eq,
 {
     fn default() -> Self {
-        Self::new(NCB as usize)
+        let vcount = num_cpus::get() * 4;
+
+        let base: usize = 2;
+        let mut p2exp: u32 = 1;
+
+        loop {
+            if vcount <= base.pow(p2exp) {
+                return Self::new(p2exp as usize);
+            } else {
+                p2exp += 1;
+            }
+        }
     }
 }
 
@@ -196,14 +185,15 @@ pub struct SMRInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    inner: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+    inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
 }
 
 impl<'a, K: 'a, V: 'a> SMRInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    fn new(inner: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
+    #[inline(always)]
+    fn new(inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
         Self {
             inner,
         }
@@ -219,14 +209,15 @@ pub struct SMRWInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    inner: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
+    inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
 }
 
 impl<'a, K: 'a, V: 'a> SMRWInterface<'a, K, V>
 where
     K: Hash + Eq,
 {
-    fn new(inner: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
+    #[inline(always)]
+    fn new(inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
         Self {
             inner,
         }
@@ -247,7 +238,7 @@ pub struct DHashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: crate::parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+    pub lock: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
     pub key: &'a K,
 }
 
@@ -267,7 +258,7 @@ pub struct DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: crate::parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
+    pub lock: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
     pub key: &'a K,
 }
 
@@ -299,7 +290,7 @@ mod tests {
 
     #[test]
     fn insert_then_assert_1024() {
-        let map = DHashMap::new(4);
+        let map = DHashMap::default();
 
         for i in 0..1024_i32 {
             map.insert(i, i * 2);

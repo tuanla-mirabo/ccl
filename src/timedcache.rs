@@ -4,9 +4,9 @@
 //! Uses a DHashMap for storage and thus has good performance and latency on both reads and writes.
 
 use crate::dhashmap::DHashMap;
-use crate::parking_lot::Mutex;
-use crate::std::hash::Hash;
-use crate::std::time;
+use parking_lot::Mutex;
+use std::hash::Hash;
+use std::time;
 
 pub const VALID_DURATION: time::Duration = time::Duration::from_secs(6 * 60 * 60);
 pub const VALID_CHECK_INTERVAL: time::Duration = time::Duration::from_secs(30 * 60);

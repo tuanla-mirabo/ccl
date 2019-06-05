@@ -4,7 +4,7 @@ blazing fast data structures for Rust
 
 ## cpu performance?
 
-Here are some benchmarks for the concurrent `DHashMap` hashmap. You can run them yourself by executing `cargo bench` in the ccl-bench directory.
+Here are some benchmarks for the concurrent `DHashMap` hashmap as of version `2.1.7`. You can run them yourself by executing `cargo bench` in the ccl-bench directory.
 Benchmarks are made with the default settings.
 
 ```
@@ -22,9 +22,3 @@ dhashmap_ccl_rayon_read_only_100k_u64_u64
 dhashmap_ccl_rayon_read_only_100k_u64_u128x16                                                                             
                         time:   [1.5210 ms 1.5259 ms 1.5329 ms]
 ```
-
-## todo list
-
-- add a new interface api for managing borrows to prevent deadlocks
-
-- explore new concurrent hashmap designs possibly based on c++ junction
