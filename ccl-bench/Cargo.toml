@@ -16,3 +16,7 @@ jemallocator = "0.3.0"
 [[bench]]
 name = "dhashmap"
 harness = false
+
+[[bench]]
+name = "crudehashmap"
+harness = false
