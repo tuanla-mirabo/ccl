@@ -17,8 +17,3 @@ pub fn round_pow2(x: usize) -> usize {
     }
     pow
 }
-
-#[inline]
-pub fn atomic_spin_while_true(x: &AtomicBool) {
-    while x.load(Ordering::SeqCst) {}
-}
