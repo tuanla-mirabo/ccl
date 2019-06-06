@@ -92,3 +92,23 @@ impl<'a, V> Deref for MapRef<'a, V> {
         self.ptr
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn safety_mem_recl() {
+        let map = CrudeHashMap::new(128);
+
+        let k = String::from("aww yeah");
+        let k2 = String::from("aww yeah");
+        let v = String::from("f8381s");
+
+        map.insert(k, v);
+
+        let guard = map.get(&k2).expect("failed to fetch object");
+
+        println!("v: {}", *guard);
+    }
+}
