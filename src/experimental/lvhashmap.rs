@@ -1,6 +1,6 @@
+use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
 use std::hash::Hash;
-use std::sync::atomic::{Ordering, AtomicBool, AtomicUsize, spin_loop_hint as cpu_relax};
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Shared, Guard};
+use std::sync::atomic::{spin_loop_hint as cpu_relax, AtomicBool, AtomicUsize, Ordering};
 
 const USIZE_MSB: usize = std::isize::MIN as usize;
 
@@ -40,18 +40,14 @@ impl<K: Hash + Eq, V> Entry<K, V> {
     }
 
     fn aquire_write(&self) {
-        loop
-        {
+        loop {
             let old = (!USIZE_MSB) & self.lock.load(Ordering::Relaxed);
             let new = USIZE_MSB | old;
-            if self.lock.compare_and_swap(old,
-                                          new,
-                                          Ordering::SeqCst) == old
-            {
+            if self.lock.compare_and_swap(old, new, Ordering::SeqCst) == old {
                 while self.lock.load(Ordering::Relaxed) != USIZE_MSB {
                     cpu_relax();
                 }
-                break
+                break;
             }
         }
     }

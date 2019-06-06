@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::sync::atomic::{Ordering, AtomicBool};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[inline]
 pub fn hash<T: Hash>(v: &T) -> u64 {

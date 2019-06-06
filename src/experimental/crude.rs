@@ -1,9 +1,9 @@
-use std::sync::atomic::Ordering;
-use std::hash::Hash;
 use crate::util;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Shared, Guard};
-use std::ops::Deref;
+use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
+use std::hash::Hash;
 use std::mem;
+use std::ops::Deref;
+use std::sync::atomic::Ordering;
 
 #[allow(dead_code)]
 struct Item<K: Hash + Eq, V> {
@@ -26,7 +26,10 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
         let capacity = util::round_pow2(capacity);
 
         Self {
-            table: (0..capacity).map(|_| Atomic::new(Entry::Empty)).collect::<Vec<_>>().into_boxed_slice(),
+            table: (0..capacity)
+                .map(|_| Atomic::new(Entry::Empty))
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
         }
     }
 
@@ -37,7 +40,9 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
         let guard = &epoch::pin();
         let new = Owned::new(Entry::Occupied(Item { key, value }));
         let old = slot.swap(new, Ordering::SeqCst, guard);
-        unsafe { guard.defer_destroy(old); }
+        unsafe {
+            guard.defer_destroy(old);
+        }
     }
 
     pub fn get(&'a self, key: &K) -> Option<MapRef<V>> {
@@ -54,12 +59,10 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
 
         match entry {
             Entry::Empty => None,
-            Entry::Occupied(ref item) => {
-                Some(MapRef {
-                    guard: Some(guard),
-                    ptr: &item.value,
-                })
-            }
+            Entry::Occupied(ref item) => Some(MapRef {
+                guard: Some(guard),
+                ptr: &item.value,
+            }),
         }
     }
 
@@ -69,7 +72,9 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
         let slot = &self.table[idx];
         let guard = &epoch::pin();
         let sharedptr = slot.load(Ordering::SeqCst, guard);
-        unsafe { guard.defer_destroy(sharedptr); }
+        unsafe {
+            guard.defer_destroy(sharedptr);
+        }
     }
 }
 
