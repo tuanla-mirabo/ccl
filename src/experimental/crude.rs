@@ -46,7 +46,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> CrudeHashMap<K, V> {
         let slot = &self.table[idx];
         let guard = epoch::pin();
 
-        let fake_guard = unsafe { &*(0 as *const u8 as *const Guard) };
+        let fake_guard = unsafe { epoch::unprotected() };
 
         let sharedptr: Shared<'a, Entry<K, V>> = slot.load(Ordering::SeqCst, fake_guard);
 
