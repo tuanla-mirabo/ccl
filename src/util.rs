@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::sync::atomic::{Ordering, AtomicBool};
 
 #[inline]
 pub fn hash<T: Hash>(v: &T) -> u64 {
@@ -15,4 +16,9 @@ pub fn round_pow2(x: usize) -> usize {
         pow *= 2;
     }
     pow
+}
+
+#[inline]
+pub fn atomic_spin_while_true(x: &AtomicBool) {
+    while x.load(Ordering::SeqCst) {}
 }

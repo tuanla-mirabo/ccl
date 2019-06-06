@@ -1,5 +1,5 @@
 use std::hash::Hash;
-use std::sync::atomic::{Ordering, AtomicBool, AtomicUsize, AtomicU8, spin_loop_hint as cpu_relax};
+use std::sync::atomic::{Ordering, AtomicBool, AtomicUsize, spin_loop_hint as cpu_relax};
 use crossbeam_epoch::{self as epoch, Atomic, Owned, Shared, Guard};
 
 const USIZE_MSB: usize = std::isize::MIN as usize;
@@ -70,7 +70,8 @@ enum Bucket<K: Hash + Eq, V> {
 
 struct Table<K: Hash + Eq, V> {
     resize_in_progress: AtomicBool,
-    resize_status: AtomicU8,
+    resize_ready: AtomicBool,
     resize_new_table: Atomic<Table<K, V>>,
+    load_factor_ctr: AtomicUsize,
     data: Box<[Bucket<K, V>]>,
 }
