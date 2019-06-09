@@ -88,6 +88,12 @@ where
         }
     }
 
+    /// Shortcut for a get followed by an unwrap.
+    #[inline]
+    pub fn index(&'a self, key: &'a K) -> DHashMapRef<'a, K, V> {
+        self.get(key).unwrap()
+    }
+
     /// Get a unique reference to an element contained within the map.
     #[inline]
     pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
@@ -98,6 +104,12 @@ where
         } else {
             None
         }
+    }
+
+    /// Shortcut for a get_mut followed by an unwrap.
+    #[inline]
+    pub fn index_mut(&'a self, key: &'a K) -> DHashMapRefMut<'a, K, V> {
+        self.get_mut(key).unwrap()
     }
 
     /// Remove an element from the map if it exists. Will return the K, V pair.
@@ -181,7 +193,6 @@ where
         }
     }
 }
-
 
 /// A read only iterator interface to a chunk.
 pub struct SMRInterface<'a, K, V>
