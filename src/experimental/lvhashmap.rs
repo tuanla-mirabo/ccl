@@ -7,6 +7,26 @@ const USIZE_MSB: usize = std::isize::MIN as usize;
 const LOAD_FACTOR_MAX: f64 = 0.75;
 static REDIRECT_BUCKET: Bucket<i32, i32> = Bucket::Redirect;
 
+fn null_owned<T>() -> Owned<T> {
+    unsafe { Owned::from_usize(0) }
+}
+
+trait ExtendedPointer<T> {
+    unsafe fn as_ref_extptr(&self) -> &T;
+}
+
+impl<'g, T> ExtendedPointer<T> for Shared<'g,  T> {
+    unsafe fn as_ref_extptr(&self) -> &T {
+        self.as_ref().unwrap()
+    }
+}
+
+impl<T> ExtendedPointer<T> for Owned<T> {
+    unsafe fn as_ref_extptr(&self) -> &T {
+        &*self
+    }
+}
+
 fn make_redirect_static() -> usize {
     let rptr = &REDIRECT_BUCKET as *const Bucket<i32, i32>;
     rptr as usize
@@ -98,8 +118,32 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
-    fn insert_ptr_with_hash<'g>(&self, hash: u64, ptr: Shared<'g, Bucket<K, V>>) {
-        unimplemented!();
+    fn insert_ptr_with_hash<P: Pointer<Bucket<K, V>> + ExtendedPointer<Bucket<K, V>>>(&self, hash: u64, ptr: P) {
+        let guard = &epoch::pin();
+        let idx = hash as usize % self.data.len();
+        let mut probe_offset = 0;
+
+        let key = if let Bucket::Occupied(entry) = unsafe { ptr.as_ref_extptr() } {
+            &entry.key
+        } else {
+            panic!("what is even");
+        };
+
+        loop {
+            let slot = &self.data[idx + probe_offset];
+            let slot_bucket_ptr = slot.load(Ordering::SeqCst, guard);
+            if slot_bucket_ptr.is_null() {
+                slot.store(ptr, Ordering::SeqCst);
+                break;
+            } else {
+                let slot_ref = unsafe { slot_bucket_ptr.as_ref_extptr() };
+                match slot_ref {
+                    Bucket::Tombstone => {}
+                    Bucket::Redirect => {}
+                    Bucket::Occupied(entry) => {}
+                }
+            }
+        }
     }
 
     fn resize(&self, new_capacity: usize, selfptr: &Atomic<Table<K, V>>) {
@@ -143,5 +187,15 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                 }
             }
         }
+
+        // publish table
+        let current_table = selfptr.swap(self.resize_new_table.load(Ordering::SeqCst, guard), Ordering::SeqCst, guard);
+        unsafe { guard.defer_destroy(current_table); }
+
+        self.resize_in_progress.store(false, Ordering::SeqCst);
+        self.resize_ready.store(false, Ordering::SeqCst);
+
+        // remove new_table_ptr
+        self.resize_new_table.store(null_owned(), Ordering::SeqCst);
     }
 }
