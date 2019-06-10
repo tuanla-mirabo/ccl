@@ -1,17 +1,20 @@
 [package]
 name = "ccl"
-version = "3.1.0"
+version = "3.2.0"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
-description = "blazing fast concurrect datastructures for Rust"
+description = "blazing fast concurrect maps and caches for Rust"
 documentation = "https://docs.rs/ccl"
 
+[features]
+nightly = ["parking_lot/nightly", "hashbrown/nightly"]
+
 [dependencies]
-ccl-fxhash = "3.0.0"
-hashbrown = "0.2.1"
-parking_lot = "0.7.1"
+ccl-fxhash = { version = "3.0.0", features = ["std"] }
+hashbrown = "0.4.0"
+parking_lot = "0.8.0"
 rand = "0.6.5"
 num_cpus = "1.10.0"
