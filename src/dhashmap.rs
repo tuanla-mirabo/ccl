@@ -179,7 +179,7 @@ where
 {
     /// Creates a new DHashMap and automagically determines the optimal amount of chunks.
     fn default() -> Self {
-        let vcount = num_cpus::get() * 4;
+        let vcount = num_cpus::get() * 8;
 
         let base: usize = 2;
         let mut p2exp: u32 = 1;
