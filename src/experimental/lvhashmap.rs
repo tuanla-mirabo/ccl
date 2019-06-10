@@ -147,6 +147,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     }
 
     fn resize(&self, new_capacity: usize, selfptr: &Atomic<Table<K, V>>) {
+        let guard = &epoch::pin();
+        
         if self
             .resize_in_progress
             .compare_and_swap(false, true, Ordering::SeqCst)
@@ -156,7 +158,6 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
 
         let new_table = Self::new(new_capacity);
-        let guard = &epoch::pin();
 
         // publish new table internally
         if !self
