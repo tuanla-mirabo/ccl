@@ -1,12 +1,12 @@
 use crate::util;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared};
+use crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared, Guard};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
 use std::ops::Deref;
 use std::sync::atomic::{Ordering};
 
-const TABLE_SIZE: usize = 64;
+const TABLE_SIZE: usize = 32;
 
 #[inline]
 fn sharedptr_null<'a, T>() -> Shared<'a, T> {
@@ -35,7 +35,7 @@ impl<K: Hash + Eq, V> Bucket<K, V> {
 }
 
 pub struct Table<K: Hash + Eq, V> {
-    nonce: u64,
+    nonce: u8,
     buckets: Box<[Atomic<Bucket<K, V>>; TABLE_SIZE]>,
 }
 
@@ -74,6 +74,7 @@ impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
 }
 
 impl<K: Hash + Eq, V> Drop for Table<K, V> {
+    #[inline]
     fn drop(&mut self) {
         let guard = &epoch::pin();
         self.buckets.iter().for_each(|ptr| {
@@ -92,8 +93,6 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         entry_1: Shared<'a, Bucket<K, V>>,
         entry_2: Shared<'a, Bucket<K, V>>,
     ) -> Self {
-        unsafe { debug_assert!(entry_1.as_ref().unwrap().key_ref() != entry_2.as_ref().unwrap().key_ref(), "table dual new keys equal"); }
-
         let mut table = Self::empty();
         let entry_1_pos = unsafe {
             util::hash_with_nonce(entry_1.as_ref().unwrap().key_ref(), table.nonce) as usize
@@ -124,8 +123,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     }
 
     #[inline]
-    pub fn get(&'a self, key: &K) -> Option<TableRef<'a, K, V>> {
-        let guard = epoch::pin();
+    pub fn get(&'a self, key: &K, guard: Guard) -> Option<TableRef<'a, K, V>> {
         let fake_guard = unsafe { epoch::unprotected() };
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
@@ -149,14 +147,13 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     }
                 }
 
-                Bucket::Branch(table) => table.get(key),
+                Bucket::Branch(table) => table.get(key, guard),
             }
         }
     }
 
     #[inline]
-    pub fn insert(&self, entry: Owned<Bucket<K, V>>) {
-        let guard = &epoch::pin();
+    pub fn insert(&self, entry: Owned<Bucket<K, V>>, guard: &Guard) {
         let key_pos = util::hash_with_nonce(entry.key_ref(), self.nonce) as usize % TABLE_SIZE;
         let bucket = &self.buckets[key_pos];
 
@@ -177,7 +174,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
                 let entry = entry.take().unwrap();
                 match actual_ref {
-                    Bucket::Branch(ref table) => table.insert(entry),
+                    Bucket::Branch(ref table) => table.insert(entry, guard),
                     Bucket::Leaf(ref old_entry) => {
                         if entry.key_ref() == &old_entry.key {
                             bucket.store(entry, Ordering::SeqCst);
@@ -196,15 +193,14 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     }
 
     #[inline]
-    pub fn remove(&self, key: &K) {
-        let guard = &epoch::pin();
+    pub fn remove(&self, key: &K, guard: &Guard) {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
         let bucket_sharedptr = self.buckets[key_pos].load(Ordering::SeqCst, guard);
 
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
-                Bucket::Branch(table) => table.remove(key),
+                Bucket::Branch(table) => table.remove(key, guard),
                 Bucket::Leaf(_) => {
                     let res = self.buckets[key_pos].compare_and_set(bucket_sharedptr, sharedptr_null(), Ordering::SeqCst, guard);
 
