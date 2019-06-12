@@ -12,10 +12,10 @@ Benchmarks for other parts of the library are a work in progress.
 
 * [ ] Ergonomic multiborrow API for `DHashMap`
 
-* [ ] DHashSet
-
 * [ ] NestedMap + NestedSet
 
 * [ ] Concurrent LIFO stack
 
 * [ ] Concurrent unordered element list (Like the use case a `Vec` may provide for single threaded scenarios). Mostly for grouping data.
+
+* [ ] Crossbeam integration
