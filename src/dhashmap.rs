@@ -13,11 +13,14 @@ use std::ops::{Deref, DerefMut};
 ///
 /// One of those limits is iteration, you cannot iterate over the elements directly.
 /// Instead you have to iterate over chunks which can iterate over KV pairs.
+/// This is needed in order to use the calling thread stack as scratch space to avoid heap allocations.
 ///
 /// Unsafe is used to avoid bounds checking when accessing chunks.
 /// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of chunks.
 /// The amount of chunks cannot be altered after creation in any way.
-
+///
+/// This map is not lockfree but uses some clever locking internally. It has good average case performance but you should not
+/// rely on being able to hold any combination of references involving a mutable one as it may cause a deadlock.
 pub struct DHashMap<K, V>
 where
     K: Hash + Eq,
@@ -40,7 +43,10 @@ where
 
         Self {
             ncb: submaps_exp_of_two_pow,
-            submaps: (0..ncm).map(|_| RwLock::new(HashMap::new())).collect::<Vec<_>>().into_boxed_slice(),
+            submaps: (0..ncm)
+                .map(|_| RwLock::new(HashMap::new()))
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
             hash_nonce: rand::random(),
         }
     }
@@ -49,13 +55,15 @@ where
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     pub fn with_capacity(submaps_exp_of_two_pow: usize, capacity: usize) -> Self {
-
         let ncm = 1 << submaps_exp_of_two_pow;
         let cpm = capacity / ncm;
 
         Self {
             ncb: submaps_exp_of_two_pow,
-            submaps: (0..ncm).map(|_| RwLock::new(HashMap::with_capacity(cpm))).collect::<Vec<_>>().into_boxed_slice(),
+            submaps: (0..ncm)
+                .map(|_| RwLock::new(HashMap::with_capacity(cpm)))
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
             hash_nonce: rand::random(),
         }
     }
@@ -141,22 +149,19 @@ where
     /// Apply a function to every item in the map.
     #[inline]
     pub fn alter<F: FnMut((&K, &mut V)) + Clone>(&self, f: F) {
-        self.tables_write().for_each(|mut t| t.iter_mut().for_each(f.clone()))
+        self.tables_write()
+            .for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
     /// Iterate over chunks in a read only fashion.
     #[inline]
-    pub fn tables_read(
-        &self,
-    ) -> impl Iterator<Item = SMRInterface<K, V>> {
+    pub fn tables_read(&self) -> impl Iterator<Item = SMRInterface<K, V>> {
         self.submaps.iter().map(|t| SMRInterface::new(t.read()))
     }
 
     /// Iterate over chunks in a read-write fashion.
     #[inline]
-    pub fn tables_write(
-        &self,
-    ) -> impl Iterator<Item = SMRWInterface<K, V>> {
+    pub fn tables_write(&self) -> impl Iterator<Item = SMRWInterface<K, V>> {
         self.submaps.iter().map(|t| SMRWInterface::new(t.write()))
     }
 
@@ -208,9 +213,7 @@ where
 {
     #[inline]
     fn new(inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
-        Self {
-            inner,
-        }
+        Self { inner }
     }
 
     #[inline]
@@ -233,9 +236,7 @@ where
 {
     #[inline]
     fn new(inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
-        Self {
-            inner,
-        }
+        Self { inner }
     }
 
     #[inline]
