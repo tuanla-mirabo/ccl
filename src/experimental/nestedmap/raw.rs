@@ -34,7 +34,7 @@ impl<K: Hash + Eq, V> Bucket<K, V> {
 
 pub struct Table<K: Hash + Eq, V> {
     nonce: u64,
-    buckets: [Atomic<Bucket<K, V>>; TABLE_SIZE],
+    buckets: Box<[Atomic<Bucket<K, V>>; TABLE_SIZE]>,
 }
 
 pub struct TableRef<'a, K: Hash + Eq, V> {
@@ -96,7 +96,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     pub fn empty() -> Self {
         Self {
             nonce: rand::thread_rng().gen(),
-            buckets: unsafe { mem::zeroed() },
+            buckets: unsafe { Box::new(mem::zeroed()) },
         }
     }
 
@@ -170,7 +170,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                 Bucket::Leaf(_) => {
                     let res = self.buckets[key_pos].compare_and_set(bucket_sharedptr, sharedptr_null(), Ordering::SeqCst, guard);
 
-                    if let Ok(_) = res {
+                    if res.is_ok() {
                         unsafe { guard.defer_destroy(bucket_sharedptr) };
                     }
                 }

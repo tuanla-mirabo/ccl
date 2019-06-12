@@ -29,3 +29,9 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         self.root.remove(key);
     }
 }
+
+impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
