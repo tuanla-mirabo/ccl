@@ -79,13 +79,15 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         entry_1: Shared<'a, Bucket<K, V>>,
         entry_2: Shared<'a, Bucket<K, V>>,
     ) -> Self {
+        unsafe { debug_assert!(entry_1.as_ref().unwrap().key_ref() != entry_2.as_ref().unwrap().key_ref(), "table dual new keys equal"); }
+
         let mut table = Self::empty();
         let entry_1_pos = unsafe {
             util::hash_with_nonce(entry_1.as_ref().unwrap().key_ref(), table.nonce) as usize
                 % TABLE_SIZE
         };
         let entry_2_pos = unsafe {
-            util::hash_with_nonce(entry_1.as_ref().unwrap().key_ref(), table.nonce) as usize
+            util::hash_with_nonce(entry_2.as_ref().unwrap().key_ref(), table.nonce) as usize
                 % TABLE_SIZE
         };
 
@@ -123,10 +125,16 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             let bucket_ref = unsafe { bucket_shared.deref() };
 
             match bucket_ref {
-                Bucket::Leaf(entry) => Some(TableRef {
-                    guard: Some(guard),
-                    ptr: entry,
-                }),
+                Bucket::Leaf(entry) => {
+                    if &entry.key == key {
+                        Some(TableRef {
+                            guard: Some(guard),
+                            ptr: entry,
+                        })
+                    } else {
+                        None
+                    }
+                }
 
                 Bucket::Branch(table) => table.get(key),
             }
@@ -154,14 +162,19 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                 let actual = err.current;
                 let actual_ref = unsafe { actual.as_ref().expect("insert1 null") };
 
+                let entry = entry.take().unwrap();
                 match actual_ref {
-                    Bucket::Branch(ref table) => table.insert(entry.take().unwrap()),
-                    Bucket::Leaf(ref _old_entry) => {
-                        let new_table = Owned::new(Bucket::Branch(Table::with_two_entries(
-                            actual,
-                            entry.take().unwrap().into_shared(guard),
-                        )));
-                        bucket.store(new_table, Ordering::SeqCst);
+                    Bucket::Branch(ref table) => table.insert(entry),
+                    Bucket::Leaf(ref old_entry) => {
+                        if entry.key_ref() == &old_entry.key {
+                            bucket.store(entry, Ordering::SeqCst);
+                        } else {
+                            let new_table = Owned::new(Bucket::Branch(Table::with_two_entries(
+                                actual,
+                                entry.into_shared(guard),
+                            )));
+                            bucket.store(new_table, Ordering::SeqCst);
+                        }
                     }
                 }
             }

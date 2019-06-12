@@ -3,6 +3,9 @@
 
 mod raw;
 
+#[cfg(test)]
+mod tests;
+
 use raw::{Table, Bucket, Entry};
 pub use raw::TableRef;
 use crossbeam_epoch::Owned;
