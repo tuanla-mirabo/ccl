@@ -8,6 +8,7 @@ use std::sync::atomic::{Ordering};
 
 const TABLE_SIZE: usize = 256;
 
+#[inline]
 fn sharedptr_null<'a, T>() -> Shared<'a, T> {
     unsafe { Shared::from_usize(0) }
 }
@@ -23,6 +24,7 @@ pub enum Bucket<K: Hash + Eq, V> {
 }
 
 impl<K: Hash + Eq, V> Bucket<K, V> {
+    #[inline]
     fn key_ref(&self) -> &K {
         if let Bucket::Leaf(entry) = self {
             &entry.key
@@ -43,6 +45,7 @@ pub struct TableRef<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> Drop for TableRef<'a, K, V> {
+    #[inline]
     fn drop(&mut self) {
         let guard = self.guard.take();
         mem::drop(guard);
@@ -50,10 +53,12 @@ impl<'a, K: Hash + Eq, V> Drop for TableRef<'a, K, V> {
 }
 
 impl<'a, K: Hash + Eq, V> TableRef<'a, K, V> {
+    #[inline]
     pub fn key(&self) -> &K {
         &self.ptr.key
     }
 
+    #[inline]
     pub fn value(&self) -> &V {
         &self.ptr.value
     }
@@ -62,12 +67,14 @@ impl<'a, K: Hash + Eq, V> TableRef<'a, K, V> {
 impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
     type Target = V;
 
+    #[inline]
     fn deref(&self) -> &V {
         &self.value()
     }
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
+    #[inline]
     fn with_two_entries(
         entry_1: Shared<'a, Bucket<K, V>>,
         entry_2: Shared<'a, Bucket<K, V>>,
@@ -93,6 +100,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         table
     }
 
+    #[inline]
     pub fn empty() -> Self {
         Self {
             nonce: rand::thread_rng().gen(),
@@ -100,6 +108,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
+    #[inline]
     pub fn get(&'a self, key: &K) -> Option<TableRef<'a, K, V>> {
         let guard = epoch::pin();
         let fake_guard = unsafe { epoch::unprotected() };
@@ -124,6 +133,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
+    #[inline]
     pub fn insert(&self, entry: Owned<Bucket<K, V>>) {
         let guard = &epoch::pin();
         let key_pos = util::hash_with_nonce(entry.key_ref(), self.nonce) as usize % TABLE_SIZE;
@@ -158,6 +168,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
+    #[inline]
     pub fn remove(&self, key: &K) {
         let guard = &epoch::pin();
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;

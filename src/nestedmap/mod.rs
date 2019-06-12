@@ -19,15 +19,18 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         }
     }
 
+    #[inline]
     pub fn insert(&self, key: K, value: V) {
         let bucket = Owned::new(Bucket::Leaf(Entry { key, value }));
         self.root.insert(bucket);
     }
 
+    #[inline]
     pub fn get(&'a self, key: &K) -> Option<TableRef<'a, K, V>> {
         self.root.get(key)
     }
 
+    #[inline]
     pub fn remove(&self, key: &K) {
         self.root.remove(key);
     }
