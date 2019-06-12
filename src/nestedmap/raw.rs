@@ -6,7 +6,7 @@ use std::mem;
 use std::ops::Deref;
 use std::sync::atomic::{Ordering};
 
-const TABLE_SIZE: usize = 256;
+const TABLE_SIZE: usize = 32;
 
 #[inline]
 fn sharedptr_null<'a, T>() -> Shared<'a, T> {
@@ -168,6 +168,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     Bucket::Leaf(ref old_entry) => {
                         if entry.key_ref() == &old_entry.key {
                             bucket.store(entry, Ordering::SeqCst);
+                            unsafe { guard.defer_destroy(actual) }
                         } else {
                             let new_table = Owned::new(Bucket::Branch(Table::with_two_entries(
                                 actual,

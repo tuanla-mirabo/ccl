@@ -19,3 +19,6 @@ parking_lot = "0.8.0"
 rand = "0.6.5"
 num_cpus = "1.10.0"
 crossbeam-epoch = "0.7.1"
+
+[dev-dependencies]
+rayon = "1.0.3"
