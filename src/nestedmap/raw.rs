@@ -6,7 +6,7 @@ use std::mem;
 use std::ops::Deref;
 use std::sync::atomic::{Ordering};
 
-const TABLE_SIZE: usize = 32;
+const TABLE_SIZE: usize = 64;
 
 #[inline]
 fn sharedptr_null<'a, T>() -> Shared<'a, T> {
