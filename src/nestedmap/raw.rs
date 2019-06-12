@@ -73,6 +73,19 @@ impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
     }
 }
 
+impl<K: Hash + Eq, V> Drop for Table<K, V> {
+    fn drop(&mut self) {
+        let guard = &epoch::pin();
+        self.buckets.iter().for_each(|ptr| {
+            let shared = ptr.load(Ordering::SeqCst, guard);
+
+            if !shared.is_null() {
+                unsafe { guard.defer_destroy(shared) };
+            }
+        });
+    }
+}
+
 impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     #[inline]
     fn with_two_entries(

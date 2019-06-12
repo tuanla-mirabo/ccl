@@ -18,7 +18,7 @@ fn insert_then_assert_st() {
 fn insert_rayon() {
     let map = NestedMap::default();
 
-    let iter_c: i32 = 1024 * 1024 * 32;
+    let iter_c: i32 = 1024 * 1024 * 4;
 
     (0..iter_c).into_par_iter().for_each(|i| {
         map.insert(i, i * 7);
