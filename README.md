@@ -1,7 +1,21 @@
 # ccl
 
-blazing fast data structures for Rust
+Fast datastructures for use in highly concurrent systems.
 
-## cpu performance?
+## Performance
 
-Please refer to the Grand Concurrent Hashmap Competition for performance. https://gitlab.nebulanet.cc/xacrimon/rs-hm-bench
+Please refer to the Grand Concurrent Hashmap Competition for performance regarding maps. https://gitlab.nebulanet.cc/xacrimon/rs-hm-bench
+
+Benchmarks for other parts of the library are a work in progress.
+
+## Todo list
+
+* [ ] Ergonomic multiborrow API for `DHashMap`
+
+* [ ] DHashSet
+
+* [ ] NestedMap + NestedSet
+
+* [ ] Concurrent LIFO stack
+
+* [ ] Concurrent unordered element list (Like the use case a `Vec` may provide for single threaded scenarios). Mostly for grouping data.
