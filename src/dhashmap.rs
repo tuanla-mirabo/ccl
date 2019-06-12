@@ -120,6 +120,18 @@ where
         self.get_mut(key).unwrap()
     }
 
+    /// Get the amount of elements stored within the map.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.submaps.iter().map(|s| s.read().len()).sum()
+    }
+
+    /// Check if the map is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Remove an element from the map if it exists. Will return the K, V pair.
     #[inline]
     pub fn remove(&self, key: &K) -> Option<(K, V)> {
