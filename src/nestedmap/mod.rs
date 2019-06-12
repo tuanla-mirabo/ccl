@@ -1,3 +1,6 @@
+//! NestedMap is an experimental lockfree map that is not ready for produuction use yet.
+//! No guarantees are made at the moment. Use at your own risk.
+
 mod raw;
 
 use raw::{Table, Bucket, Entry};

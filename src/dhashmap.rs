@@ -13,11 +13,14 @@ use std::ops::{Deref, DerefMut};
 ///
 /// One of those limits is iteration, you cannot iterate over the elements directly.
 /// Instead you have to iterate over chunks which can iterate over KV pairs.
+/// This is needed in order to use the calling thread stack as scratch space to avoid heap allocations.
 ///
 /// Unsafe is used to avoid bounds checking when accessing chunks.
 /// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of chunks.
 /// The amount of chunks cannot be altered after creation in any way.
-
+///
+/// This map is not lockfree but uses some clever locking internally. It has good average case performance but you should not
+/// rely on being able to hold any combination of references involving a mutable one as it may cause a deadlock.
 pub struct DHashMap<K, V>
 where
     K: Hash + Eq,
