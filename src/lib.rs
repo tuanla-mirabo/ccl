@@ -1,4 +1,4 @@
-//! ccl is a library implementing concurrent datastructures such as maps.
+//! ccl is a library implementing concurrent datastructures for a wide variety of use cases.
 //!
 //! Please read the module documentation for a given module before using it
 

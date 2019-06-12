@@ -35,6 +35,8 @@ where
     K: Hash + Eq,
 {
     /// Create a new DHashMap.
+    /// If you do not have specific requirements and understand the code you should probably call `DHashMap::default` instead. It will determine
+    /// the optimal parameters automagically.
     /// The amount of chunks used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.

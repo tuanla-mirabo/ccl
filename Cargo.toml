@@ -1,13 +1,16 @@
 [package]
 name = "ccl"
-version = "3.5.0"
+version = "3.5.1"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
 repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 homepage = "https://gitlab.nebulanet.cc/xacrimon/ccl"
-description = "blazing fast concurrect maps and caches for Rust"
+description = "Fast datastructures for use in highly concurrent systems."
+readme = "README.md"
 documentation = "https://docs.rs/ccl"
+keywords = ["atomic", "concurrent", "map", "parallel", "hashmap"]
+categories = ["concurrency", "algorithms", "data-structures"]
 
 [features]
 nightly = ["parking_lot/nightly", "hashbrown/nightly"]
