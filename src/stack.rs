@@ -5,7 +5,7 @@ use std::ptr;
 use crossbeam_epoch::{self as epoch, Atomic, Owned, Guard, Pointer};
 use std::mem;
 
-/// Aquire a guard. These are needed when accessing a stack. Since aquiring a guard has a insignificant cost,
+/// Aquire a guard. These are needed when accessing a stack. Since aquiring a guard has a significant cost,
 /// you may wish to aquire a guard once and pass it around when doing bulk operations.
 /// For most use cases you will not need this.
 ///
