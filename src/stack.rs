@@ -86,3 +86,37 @@ impl<T> Default for ConcurrentStack<T> {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rayon::prelude::*;
+
+    #[test]
+    fn insert_then_pop_assert_1024_st() {
+        let stack = ConcurrentStack::new();
+
+        for _ in 0..1024_i32 {
+            stack.push(9);
+        }
+
+        for _ in 0..1024_i32 {
+            assert_eq!(9, stack.pop().unwrap());
+        }
+    }
+
+    #[test]
+    fn insert_then_pop_assert_rayon() {
+        let stack = ConcurrentStack::new();
+
+        let iter_c: i32 = 1024 * 1024;
+
+        (0..iter_c).into_par_iter().for_each(|_| {
+            stack.push(9);
+        });
+
+        (0..iter_c).into_par_iter().for_each(|_| {
+            assert_eq!(9, stack.pop().unwrap());
+        });
+    }
+}
