@@ -1,4 +1,4 @@
-//! NestedMap is an experimental lockfree map that is not ready for production use yet.
+//! NestedMap is an experimental lockfree map that is not ready for use yet.
 //! No guarantees are made at the moment. Use at your own risk.
 
 mod raw;

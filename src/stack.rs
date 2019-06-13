@@ -1,8 +1,16 @@
+//! Please see the struct level documentation.
+
 use std::sync::atomic::Ordering;
 use std::ptr;
 use crossbeam_epoch::{self as epoch, Atomic, Owned, Guard, Pointer};
 use std::mem;
 
+#[inline]
+pub fn aquire_guard() -> Guard {
+    epoch::pin()
+}
+
+/// ConcurrentStack is a general purpose threadsafe and lockfree FILO/LIFO stack.
 pub struct ConcurrentStack<T> {
     head: Atomic<Node<T>>,
 }
@@ -19,16 +27,19 @@ impl<T> ConcurrentStack<T> {
         }
     }
 
+    #[inline]
     pub fn push(&self, data: T) {
-        let guard = &epoch::pin();
+        let guard = &aquire_guard();
         self.push_with_guard(data, guard);
     }
 
+    #[inline]
     pub fn pop(&self) -> Option<T> {
-        let guard = &epoch::pin();
+        let guard = &aquire_guard();
         self.pop_with_guard(guard)
     }
 
+    #[inline]
     pub fn push_with_guard(&self, data: T, guard: &Guard) {
         let mut node = Owned::new(Node {
             data,
@@ -47,6 +58,7 @@ impl<T> ConcurrentStack<T> {
         }
     }
 
+    #[inline]
     pub fn pop_with_guard(&self, guard: &Guard) -> Option<T> {
         loop {
             let head_ptr = self.head.load(Ordering::SeqCst, guard);
