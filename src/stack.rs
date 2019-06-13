@@ -52,6 +52,7 @@ impl<T> ConcurrentStack<T> {
     #[inline]
     pub fn pop_iter(&self) -> StackIter<T> {
         StackIter {
+            guard: aquire_guard(),
             stack: &self,
         }
     }
@@ -108,6 +109,7 @@ impl<T> Default for ConcurrentStack<T> {
 
 /// An iterator over a stack.
 pub struct StackIter<'a, T> {
+    guard: Guard,
     stack: &'a ConcurrentStack<T>,
 }
 
@@ -116,7 +118,7 @@ impl<'a, T> Iterator for StackIter<'a, T> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.stack.pop()
+        self.stack.pop_with_guard(&self.guard)
     }
 }
 
