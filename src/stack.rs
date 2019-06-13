@@ -40,6 +40,13 @@ impl<T> ConcurrentStack<T> {
     }
 
     #[inline]
+    pub fn pop_iter(&self) -> PopIter<T> {
+        PopIter {
+            stack: &self,
+        }
+    }
+
+    #[inline]
     pub fn push_with_guard(&self, data: T, guard: &Guard) {
         let mut node = Owned::new(Node {
             data,
@@ -84,6 +91,19 @@ impl<T> ConcurrentStack<T> {
 impl<T> Default for ConcurrentStack<T> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// An iterator over a stack.
+pub struct PopIter<'a, T> {
+    stack: &'a ConcurrentStack<T>,
+}
+
+impl<'a, T> Iterator for PopIter<'a, T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stack.pop()
     }
 }
 
