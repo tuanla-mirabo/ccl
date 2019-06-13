@@ -111,7 +111,7 @@ impl<T> ConcurrentStack<T> {
 
                     if let Ok(head_ptr) = self.head.compare_and_set(head_ptr, next, Ordering::SeqCst, guard) {
                         guard.defer_unchecked(move || {
-                            mem::drop(Box::from_raw(head_ptr.into_usize() as *mut Node<T>));
+                            mem::drop(Box::from_raw(head_ptr.into_usize() as *mut u8));
                         });
 
                         return Some(ptr::read(&(*head).data));
