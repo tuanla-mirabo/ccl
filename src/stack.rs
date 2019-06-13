@@ -80,3 +80,9 @@ impl<T> ConcurrentStack<T> {
         }
     }
 }
+
+impl<T> Default for ConcurrentStack<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
