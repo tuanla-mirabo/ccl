@@ -21,9 +21,31 @@ pub struct ConcurrentStack<T> {
     head: Atomic<Node<T>>,
 }
 
+impl<T> Drop for ConcurrentStack<T> {
+    fn drop(&mut self) {
+        let guard = &aquire_guard();
+        let head = self.head.load(Ordering::SeqCst, guard);
+
+        if !head.is_null() {
+            unsafe { guard.defer_destroy(head); }
+        }
+    }
+}
+
 struct Node<T> {
     data: T,
     next: Atomic<Node<T>>,
+}
+
+impl<T> Drop for Node<T> {
+    fn drop(&mut self) {
+        let guard = &aquire_guard();
+        let next = self.next.load(Ordering::SeqCst, guard);
+
+        if !next.is_null() {
+            unsafe { guard.defer_destroy(next); }
+        }
+    }
 }
 
 impl<T> ConcurrentStack<T> {
