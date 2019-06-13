@@ -21,9 +21,33 @@ pub struct ConcurrentStack<T> {
     head: Atomic<Node<T>>,
 }
 
+impl<T> Drop for ConcurrentStack<T> {
+    #[inline]
+    fn drop(&mut self) {
+        let guard = &aquire_guard();
+        let head = self.head.load(Ordering::SeqCst, guard);
+
+        if !head.is_null() {
+            unsafe { guard.defer_destroy(head); }
+        }
+    }
+}
+
 struct Node<T> {
     data: T,
     next: Atomic<Node<T>>,
+}
+
+impl<T> Drop for Node<T> {
+    #[inline]
+    fn drop(&mut self) {
+        let guard = &aquire_guard();
+        let next = self.next.load(Ordering::SeqCst, guard);
+
+        if !next.is_null() {
+            unsafe { guard.defer_destroy(next); }
+        }
+    }
 }
 
 impl<T> ConcurrentStack<T> {
@@ -50,8 +74,9 @@ impl<T> ConcurrentStack<T> {
 
     /// Create an iterator over all elements in the stack.
     #[inline]
-    pub fn pop_iter(&self) -> PopIter<T> {
-        PopIter {
+    pub fn pop_iter(&self) -> StackIter<T> {
+        StackIter {
+            guard: aquire_guard(),
             stack: &self,
         }
     }
@@ -88,7 +113,7 @@ impl<T> ConcurrentStack<T> {
 
                     if let Ok(head_ptr) = self.head.compare_and_set(head_ptr, next, Ordering::SeqCst, guard) {
                         guard.defer_unchecked(move || {
-                            mem::drop(Box::from_raw(head_ptr.into_usize() as *mut Node<T>));
+                            mem::drop(Box::from_raw(head_ptr.into_usize() as *mut u8));
                         });
 
                         return Some(ptr::read(&(*head).data));
@@ -107,16 +132,17 @@ impl<T> Default for ConcurrentStack<T> {
 }
 
 /// An iterator over a stack.
-pub struct PopIter<'a, T> {
+pub struct StackIter<'a, T> {
+    guard: Guard,
     stack: &'a ConcurrentStack<T>,
 }
 
-impl<'a, T> Iterator for PopIter<'a, T> {
+impl<'a, T> Iterator for StackIter<'a, T> {
     type Item = T;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.stack.pop()
+        self.stack.pop_with_guard(&self.guard)
     }
 }
 

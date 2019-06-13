@@ -1,17 +1,13 @@
 use crate::util;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared, Guard};
+use crossbeam_epoch::{self as epoch, Atomic, Owned, Shared, Guard};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
 use std::ops::Deref;
 use std::sync::atomic::{Ordering};
+use crate::util::sharedptr_null;
 
 const TABLE_SIZE: usize = 32;
-
-#[inline]
-fn sharedptr_null<'a, T>() -> Shared<'a, T> {
-    unsafe { Shared::from_usize(0) }
-}
 
 pub struct Entry<K: Hash + Eq, V> {
     pub key: K,
