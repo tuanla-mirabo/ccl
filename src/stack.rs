@@ -50,8 +50,8 @@ impl<T> ConcurrentStack<T> {
 
     /// Create an iterator over all elements in the stack.
     #[inline]
-    pub fn pop_iter(&self) -> PopIter<T> {
-        PopIter {
+    pub fn pop_iter(&self) -> StackIter<T> {
+        StackIter {
             stack: &self,
         }
     }
@@ -107,11 +107,11 @@ impl<T> Default for ConcurrentStack<T> {
 }
 
 /// An iterator over a stack.
-pub struct PopIter<'a, T> {
+pub struct StackIter<'a, T> {
     stack: &'a ConcurrentStack<T>,
 }
 
-impl<'a, T> Iterator for PopIter<'a, T> {
+impl<'a, T> Iterator for StackIter<'a, T> {
     type Item = T;
 
     #[inline]
