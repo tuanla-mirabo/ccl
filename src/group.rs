@@ -81,6 +81,13 @@ impl<'a, T> Iterator for GroupIter<'a, T> {
     }
 }
 
+impl<'a, T> Drop for GroupIter<'a, T> {
+    fn drop(&mut self) {
+        self.guard.repin();
+        self.guard.flush();
+    }
+}
+
 impl<T> Default for Group<T> {
     fn default() -> Self {
         Self::new()
