@@ -137,13 +137,6 @@ pub struct StackIter<'a, T> {
     stack: &'a ConcurrentStack<T>,
 }
 
-impl<'a, T> Drop for StackIter<'a, T> {
-    fn drop(&mut self) {
-        self.guard.repin();
-        self.guard.flush();
-    }
-}
-
 impl<'a, T> Iterator for StackIter<'a, T> {
     type Item = T;
 
