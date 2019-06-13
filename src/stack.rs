@@ -5,6 +5,12 @@ use std::ptr;
 use crossbeam_epoch::{self as epoch, Atomic, Owned, Guard, Pointer};
 use std::mem;
 
+/// Aquire a guard. These are needed when accessing a stack. Since aquiring a guard has a insignificant cost,
+/// you may wish to aquire a guard once and pass it around when doing bulk operations.
+/// For most use cases you will not need this.
+///
+/// Please note that no memory consumed by objects removed after the guard was aquired can be reclaimed
+/// until the guard has been dropped.
 #[inline]
 pub fn aquire_guard() -> Guard {
     epoch::pin()
@@ -21,24 +27,28 @@ struct Node<T> {
 }
 
 impl<T> ConcurrentStack<T> {
+    /// Create a new, empty stack.
     pub fn new() -> Self {
         Self {
             head: Atomic::null(),
         }
     }
 
+    /// Push an element to the top of the stack.
     #[inline]
     pub fn push(&self, data: T) {
         let guard = &aquire_guard();
         self.push_with_guard(data, guard);
     }
 
+    /// Pop the uppermost element of the stack.
     #[inline]
     pub fn pop(&self) -> Option<T> {
         let guard = &aquire_guard();
         self.pop_with_guard(guard)
     }
 
+    /// Create an iterator over all elements in the stack.
     #[inline]
     pub fn pop_iter(&self) -> PopIter<T> {
         PopIter {
@@ -46,6 +56,7 @@ impl<T> ConcurrentStack<T> {
         }
     }
 
+    /// Push an element with an existing guard.
     #[inline]
     pub fn push_with_guard(&self, data: T, guard: &Guard) {
         let mut node = Owned::new(Node {
@@ -65,6 +76,7 @@ impl<T> ConcurrentStack<T> {
         }
     }
 
+    /// Pop an element with an existing guard.
     #[inline]
     pub fn pop_with_guard(&self, guard: &Guard) -> Option<T> {
         loop {
@@ -102,6 +114,7 @@ pub struct PopIter<'a, T> {
 impl<'a, T> Iterator for PopIter<'a, T> {
     type Item = T;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.stack.pop()
     }
