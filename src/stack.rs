@@ -22,6 +22,7 @@ pub struct ConcurrentStack<T> {
 }
 
 impl<T> Drop for ConcurrentStack<T> {
+    #[inline]
     fn drop(&mut self) {
         let guard = &aquire_guard();
         let head = self.head.load(Ordering::SeqCst, guard);
@@ -38,6 +39,7 @@ struct Node<T> {
 }
 
 impl<T> Drop for Node<T> {
+    #[inline]
     fn drop(&mut self) {
         let guard = &aquire_guard();
         let next = self.next.load(Ordering::SeqCst, guard);
