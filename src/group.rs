@@ -16,11 +16,13 @@ impl<T> Group<T> {
         }
     }
 
+    #[inline]
     pub fn add(&self, element: T) {
         let segment_idx = rand::thread_rng().gen_range(0, self.segment_count);
         self.segments[segment_idx].push(element);
     }
 
+    #[inline]
     pub fn remove(&self) -> Option<T> {
         let segment_idx_initial = rand::thread_rng().gen_range(0, self.segment_count);
         let mut segment_idx = segment_idx_initial;
@@ -38,6 +40,7 @@ impl<T> Group<T> {
         }
     }
 
+    #[inline]
     pub fn remove_iter(&self) -> GroupIter<T> {
         GroupIter {
             group: &self,
@@ -52,6 +55,7 @@ pub struct GroupIter<'a, T> {
 impl<'a, T> Iterator for GroupIter<'a, T> {
     type Item = T;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.group.remove()
     }
