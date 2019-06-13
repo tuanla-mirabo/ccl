@@ -1,18 +1,12 @@
-use std::hash::Hash;
-use std::hash::Hasher;
+use std::hash::{Hash, Hasher};
 use crossbeam_epoch::{Shared, Pointer};
 
 #[inline]
 pub fn hash_with_nonce<T: Hash>(v: &T, nonce: u8) -> u64 {
-    let mut hash_state = fxhash::FxHasher64::default();
-    hash_state.write_u8(nonce);
-    v.hash(&mut hash_state);
-    let result = hash_state.finish();
-
-    let mut hash_state = fxhash::FxHasher64::default();
-    hash_state.write_u64(result.wrapping_mul(nonce.into()));
-    hash_state.write_u8(nonce);
-    hash_state.finish()
+    let mut hasher = seahash::SeaHasher::new();
+    hasher.write_u8(nonce);
+    v.hash(&mut hasher);
+    hasher.finish()
 }
 
 #[inline]
