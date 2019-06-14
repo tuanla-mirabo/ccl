@@ -10,6 +10,7 @@ use raw::{Table, Bucket, Entry};
 pub use raw::TableRef;
 use crossbeam_epoch::{self as epoch, Owned, Guard};
 use std::hash::Hash;
+use crate::uniform_allocator::UniformAllocator;
 
 #[inline]
 pub fn aquire_guard() -> Guard {
@@ -18,12 +19,14 @@ pub fn aquire_guard() -> Guard {
 
 pub struct NestedMap<K: Hash + Eq, V> {
     root: Table<K, V>,
+    allocator: UniformAllocator<Bucket<K, V>>,
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn new() -> Self {
         Self {
             root: Table::empty(),
+            allocator: UniformAllocator::new(),
         }
     }
 
