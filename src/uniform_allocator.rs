@@ -8,12 +8,12 @@ struct ObjectKey(usize);
 #[derive(Hash, PartialEq, Eq)]
 struct Pointer(usize);
 
-struct MemoryPool<T> {
+struct SlabSegment<T> {
     objects: Slab<T>,
     mappings: HashMap<Pointer, ObjectKey>,
 }
 
-impl<T> MemoryPool<T> {
+impl<T> SlabSegmentl<T> {
     fn new(capacity: usize) -> Self {
         Self {
             objects: Slab::with_capacity(capacity),
