@@ -4,6 +4,9 @@ use slab::Slab;
 use std::collections::VecDeque;
 use std::mem;
 
+// TODO shrinking
+// v3 ideas: bitmap based, segmented linked list (avoid too many allocs)
+
 #[derive(Hash, PartialEq, Eq)]
 struct ObjectKey(usize);
 
@@ -11,6 +14,7 @@ struct ObjectKey(usize);
 struct Pointer(usize);
 
 const SEGMENT_SIZE: usize = 128;
+const SEGMENT_MOVE_THRESHOLD: usize = SEGMENT_SIZE / 4;
 
 struct SlabSegment<T> {
     objects: Slab<T>,
@@ -25,8 +29,8 @@ impl<T> SlabSegment<T> {
         }
     }
 
-    fn has_space(&self) -> bool {
-        self.objects.len() < self.objects.capacity()
+    fn has_space(&self) -> usize {
+        self.objects.len().saturating_sub(self.objects.capacity())
     }
 
     fn alloc(&mut self) -> *mut u8 {
@@ -62,13 +66,21 @@ impl<T> MemoryPool<T> {
 
         loop {
             if let Some(segment) = self.segments.get_mut(search_idx) {
-                if segment.has_space() {
-                    return segment.alloc();
+                let space = segment.has_space();
+
+                if space != 0 {
+                    let alloc = segment.alloc();
+                    if search_idx != 0 && space > SEGMENT_MOVE_THRESHOLD {
+                        let segment = self.segments.remove(search_idx).unwrap();
+                        self.segments.push_front(segment);
+                    }
+                    return alloc;
                 } else {
                     search_idx += 1;
                 }
             } else {
-                self.segments.push_back(SlabSegment::new(SEGMENT_SIZE));
+                self.segments.push_front(SlabSegment::new(SEGMENT_SIZE));
+                search_idx = 0;
             }
         }
     }
