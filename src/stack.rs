@@ -1,9 +1,9 @@
 //! Please see the struct level documentation.
 
-use std::sync::atomic::Ordering;
-use std::ptr;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Guard, Pointer};
+use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Pointer};
 use std::mem;
+use std::ptr;
+use std::sync::atomic::Ordering;
 
 /// Aquire a guard. These are needed when accessing a stack. Since aquiring a guard has a significant cost,
 /// you may wish to aquire a guard once and pass it around when doing bulk operations.
@@ -28,7 +28,9 @@ impl<T> Drop for ConcurrentStack<T> {
         let head = self.head.load(Ordering::SeqCst, guard);
 
         if !head.is_null() {
-            unsafe { guard.defer_destroy(head); }
+            unsafe {
+                guard.defer_destroy(head);
+            }
         }
     }
 }
@@ -45,7 +47,9 @@ impl<T> Drop for Node<T> {
         let next = self.next.load(Ordering::SeqCst, guard);
 
         if !next.is_null() {
-            unsafe { guard.defer_destroy(next); }
+            unsafe {
+                guard.defer_destroy(next);
+            }
         }
     }
 }
@@ -94,7 +98,10 @@ impl<T> ConcurrentStack<T> {
 
             node.next.store(head, Ordering::SeqCst);
 
-            match self.head.compare_and_set(head, node, Ordering::SeqCst, guard) {
+            match self
+                .head
+                .compare_and_set(head, node, Ordering::SeqCst, guard)
+            {
                 Ok(_) => return,
                 Err(err) => node = err.new,
             }
@@ -111,14 +118,17 @@ impl<T> ConcurrentStack<T> {
                 Some(head) => unsafe {
                     let next = head.next.load(Ordering::SeqCst, guard);
 
-                    if let Ok(head_ptr) = self.head.compare_and_set(head_ptr, next, Ordering::SeqCst, guard) {
+                    if let Ok(head_ptr) =
+                        self.head
+                            .compare_and_set(head_ptr, next, Ordering::SeqCst, guard)
+                    {
                         guard.defer_unchecked(move || {
                             mem::drop(Box::from_raw(head_ptr.into_usize() as *mut u8));
                         });
 
                         return Some(ptr::read(&(*head).data));
                     }
-                }
+                },
                 None => return None,
             }
         }

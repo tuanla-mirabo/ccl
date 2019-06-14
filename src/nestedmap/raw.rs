@@ -1,16 +1,21 @@
+use crate::uniform_allocator::UniformAllocator;
 use crate::util;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Shared, Guard};
+use crate::util::sharedptr_null;
+use crate::util::UniformAllocExt;
+use crate::util::UniformDeallocExt;
+use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
 use std::ops::Deref;
-use std::sync::atomic::{Ordering};
-use crate::util::sharedptr_null;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 const TABLE_SIZE: usize = 32;
 
 pub struct Entry<K: Hash + Eq, V> {
     pub key: K,
+    pub alloc_tag: u8,
     pub value: V,
 }
 
@@ -33,6 +38,7 @@ impl<K: Hash + Eq, V> Bucket<K, V> {
 pub struct Table<K: Hash + Eq, V> {
     nonce: u8,
     buckets: Box<[Atomic<Bucket<K, V>>; TABLE_SIZE]>,
+    allocator: Arc<UniformAllocator<Bucket<K, V>>>,
 }
 
 pub struct TableRef<'a, K: Hash + Eq, V> {
@@ -72,12 +78,19 @@ impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
 impl<K: Hash + Eq, V> Drop for Table<K, V> {
     #[inline]
     fn drop(&mut self) {
-        let guard = &epoch::pin();
         self.buckets.iter().for_each(|ptr| {
-            let shared = ptr.load(Ordering::SeqCst, guard);
+            let ptr = unsafe { ptr.load(Ordering::Relaxed, epoch::unprotected()) };
+            if let Some(r) = unsafe { ptr.as_ref() } {
+                match r {
+                    Bucket::Leaf(entry) => {
+                        let tag = entry.alloc_tag;
+                        ptr.uniform_dealloc(&self.allocator, tag as usize);
+                    }
 
-            if !shared.is_null() {
-                unsafe { guard.defer_destroy(shared) };
+                    Bucket::Branch(_) => {
+                        ptr.uniform_dealloc(&self.allocator, 0);
+                    }
+                }
             }
         });
     }
@@ -85,11 +98,17 @@ impl<K: Hash + Eq, V> Drop for Table<K, V> {
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     #[inline]
+    pub fn allocator(&self) -> &UniformAllocator<Bucket<K, V>> {
+        &self.allocator
+    }
+
+    #[inline]
     fn with_two_entries(
+        allocator: Arc<UniformAllocator<Bucket<K, V>>>,
         entry_1: Shared<'a, Bucket<K, V>>,
         entry_2: Shared<'a, Bucket<K, V>>,
     ) -> Self {
-        let mut table = Self::empty();
+        let mut table = Self::empty(allocator);
         let entry_1_pos = unsafe {
             util::hash_with_nonce(entry_1.as_ref().unwrap().key_ref(), table.nonce) as usize
                 % TABLE_SIZE
@@ -103,18 +122,26 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             table.buckets[entry_1_pos].store(entry_1, Ordering::SeqCst);
             table.buckets[entry_2_pos].store(entry_2, Ordering::SeqCst);
         } else {
-            table.buckets[entry_1_pos] =
-                Atomic::new(Bucket::Branch(Table::with_two_entries(entry_1, entry_2)));
+            table.buckets[entry_1_pos] = Atomic::uniform_alloc(
+                &table.allocator,
+                0,
+                Bucket::Branch(Table::with_two_entries(
+                    table.allocator.clone(),
+                    entry_1,
+                    entry_2,
+                )),
+            );
         }
 
         table
     }
 
     #[inline]
-    pub fn empty() -> Self {
+    pub fn empty(allocator: Arc<UniformAllocator<Bucket<K, V>>>) -> Self {
         Self {
             nonce: rand::thread_rng().gen(),
             buckets: unsafe { Box::new(mem::zeroed()) },
+            allocator,
         }
     }
 
@@ -174,12 +201,24 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     Bucket::Leaf(ref old_entry) => {
                         if entry.key_ref() == &old_entry.key {
                             bucket.store(entry, Ordering::SeqCst);
-                            unsafe { guard.defer_destroy(actual) }
+                            unsafe {
+                                guard.defer_unchecked(|| {
+                                    actual.uniform_dealloc(
+                                        &self.allocator,
+                                        old_entry.alloc_tag as usize,
+                                    );
+                                })
+                            }
                         } else {
-                            let new_table = Owned::new(Bucket::Branch(Table::with_two_entries(
-                                actual,
-                                entry.into_shared(guard),
-                            )));
+                            let new_table = Owned::uniform_alloc(
+                                &self.allocator,
+                                0,
+                                Bucket::Branch(Table::with_two_entries(
+                                    self.allocator.clone(),
+                                    actual,
+                                    entry.into_shared(guard),
+                                )),
+                            );
                             bucket.store(new_table, Ordering::SeqCst);
                         }
                     }
@@ -197,11 +236,21 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
                 Bucket::Branch(table) => table.remove(key, guard),
-                Bucket::Leaf(_) => {
-                    let res = self.buckets[key_pos].compare_and_set(bucket_sharedptr, sharedptr_null(), Ordering::SeqCst, guard);
+                Bucket::Leaf(entry) => {
+                    let res = self.buckets[key_pos].compare_and_set(
+                        bucket_sharedptr,
+                        sharedptr_null(),
+                        Ordering::SeqCst,
+                        guard,
+                    );
 
                     if res.is_ok() {
-                        unsafe { guard.defer_destroy(bucket_sharedptr) };
+                        unsafe {
+                            guard.defer_unchecked(|| {
+                                bucket_sharedptr
+                                    .uniform_dealloc(&self.allocator, entry.alloc_tag as usize);
+                            })
+                        };
                     }
                 }
             }

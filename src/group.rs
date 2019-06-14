@@ -1,6 +1,6 @@
 use super::stack::ConcurrentStack;
-use rand::prelude::*;
 use crossbeam_epoch::{self as epoch, Guard};
+use rand::prelude::*;
 
 /// Aquire a guard. These are needed when accessing a group. Since aquiring a guard has a significant cost,
 /// you may wish to aquire a guard once and pass it around when doing bulk operations.
@@ -28,7 +28,10 @@ impl<T> Group<T> {
 
         Self {
             segment_count,
-            segments: (0..segment_count).map(|_| ConcurrentStack::new()).collect::<Vec<_>>().into_boxed_slice(),
+            segments: (0..segment_count)
+                .map(|_| ConcurrentStack::new())
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
         }
     }
 

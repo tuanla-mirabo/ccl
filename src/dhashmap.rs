@@ -1,11 +1,11 @@
 //! Please see the struct level documentation.
 
 use hashbrown::HashMap;
+use owning_ref::{OwningRef, OwningRefMut};
 use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
-use owning_ref::{OwningRef, OwningRefMut};
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///

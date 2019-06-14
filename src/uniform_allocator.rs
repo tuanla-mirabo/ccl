@@ -1,8 +1,8 @@
-use std::mem;
-use slab::Slab;
 use hashbrown::HashMap;
-use std::collections::VecDeque;
 use parking_lot::Mutex;
+use slab::Slab;
+use std::collections::VecDeque;
+use std::mem;
 
 #[derive(Hash, PartialEq, Eq)]
 struct ObjectKey(usize);
@@ -34,13 +34,12 @@ impl<T> SlabSegment<T> {
         ptr as *mut u8
     }
 
-    fn dealloc(&mut self, ptr: *mut u8) -> bool {
+    fn dealloc(&mut self, ptr: *mut u8) -> Option<T> {
         let ptr = ptr as usize;
         if let Some(key) = self.mappings.remove(&Pointer(ptr)) {
-            self.objects.remove(key.0);
-            true
+            Some(self.objects.remove(key.0))
         } else {
-            false
+            None
         }
     }
 }
@@ -60,7 +59,7 @@ impl<T> MemoryPool<T> {
         let mut search_idx = 0;
 
         loop {
-            if let Some(mut segment) = self.segments.get_mut(search_idx) {
+            if let Some(segment) = self.segments.get_mut(search_idx) {
                 if segment.has_space() {
                     return segment.alloc();
                 } else {
@@ -72,12 +71,14 @@ impl<T> MemoryPool<T> {
         }
     }
 
-    fn dealloc(&mut self, ptr: *mut u8) {
+    fn dealloc(&mut self, ptr: *mut u8) -> Option<T> {
         for segment in &mut self.segments {
-            if segment.dealloc(ptr) {
-                break;
+            if let Some(v) = segment.dealloc(ptr) {
+                return Some(v);
             }
         }
+
+        None
     }
 }
 
@@ -90,17 +91,22 @@ impl<T> UniformAllocator<T> {
     pub fn new(pool_count: usize) -> Self {
         Self {
             pool_count,
-            pools: (0..pool_count).map(|_| Mutex::new(MemoryPool::new())).collect::<Vec<_>>().into_boxed_slice(),
+            pools: (0..pool_count)
+                .map(|_| Mutex::new(MemoryPool::new()))
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
         }
     }
 
     pub fn alloc(&self, tag: usize) -> *mut u8 {
-        let mut pool = self.pools[tag % self.pool_count].lock();
+        let pool_idx = tag % self.pool_count;
+        let mut pool = self.pools[pool_idx].lock();
         pool.alloc()
     }
 
-    pub fn dealloc(self, tag: usize, ptr: *mut u8) {
-        let mut pool = self.pools[tag % self.pool_count].lock();
-        pool.dealloc(ptr);
+    pub fn dealloc(&self, tag: usize, ptr: *mut u8) -> Option<T> {
+        let pool_idx = tag % self.pool_count;
+        let mut pool = self.pools[pool_idx].lock();
+        pool.dealloc(ptr)
     }
 }
