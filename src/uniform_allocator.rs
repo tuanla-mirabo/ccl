@@ -13,7 +13,7 @@ struct SlabSegment<T> {
     mappings: HashMap<Pointer, ObjectKey>,
 }
 
-impl<T> SlabSegmentl<T> {
+impl<T> SlabSegment<T> {
     fn new(capacity: usize) -> Self {
         Self {
             objects: Slab::with_capacity(capacity),
