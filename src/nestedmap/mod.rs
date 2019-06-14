@@ -12,7 +12,7 @@ use crossbeam_epoch::{self as epoch, Owned, Guard};
 use std::hash::Hash;
 
 #[inline]
-pub fn pin() -> Guard {
+pub fn aquire_guard() -> Guard {
     epoch::pin()
 }
 
