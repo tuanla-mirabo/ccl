@@ -9,11 +9,11 @@ mod tests;
 use crate::uniform_allocator::UniformAllocator;
 use crate::util::UniformAllocExt;
 use crossbeam_epoch::{self as epoch, Guard, Owned};
+use rand::prelude::*;
 pub use raw::TableRef;
 use raw::{Bucket, Entry, Table};
 use std::hash::Hash;
 use std::sync::Arc;
-use rand::prelude::*;
 
 #[inline]
 pub fn aquire_guard() -> Guard {
@@ -46,10 +46,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         let bucket = Owned::uniform_alloc(
             self.root.allocator(),
             tag as usize,
-            Bucket::Leaf(tag, Entry {
-                key,
-                value,
-            }),
+            Bucket::Leaf(tag, Entry { key, value }),
         );
         self.root.insert(bucket, guard);
     }

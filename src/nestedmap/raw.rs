@@ -88,7 +88,9 @@ impl<K: Hash + Eq, V> Drop for Table<K, V> {
         self.buckets.iter().for_each(|ptr| {
             let ptr = unsafe { ptr.load(Ordering::Relaxed, epoch::unprotected()) };
             if !ptr.is_null() {
-                unsafe { ptr.uniform_dealloc(&self.allocator, ptr.deref().tag() as usize); }
+                unsafe {
+                    ptr.uniform_dealloc(&self.allocator, ptr.deref().tag() as usize);
+                }
             }
         });
     }
@@ -124,11 +126,10 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             table.buckets[entry_1_pos] = Atomic::uniform_alloc(
                 &table.allocator,
                 tag as usize,
-                Bucket::Branch(tag, Table::with_two_entries(
-                    table.allocator.clone(),
-                    entry_1,
-                    entry_2,
-                )),
+                Bucket::Branch(
+                    tag,
+                    Table::with_two_entries(table.allocator.clone(), entry_1, entry_2),
+                ),
             );
         }
 
@@ -202,10 +203,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                             bucket.store(entry, Ordering::SeqCst);
                             unsafe {
                                 guard.defer_unchecked(|| {
-                                    actual.uniform_dealloc(
-                                        &self.allocator,
-                                        *actual_tag as usize,
-                                    );
+                                    actual.uniform_dealloc(&self.allocator, *actual_tag as usize);
                                 })
                             }
                         } else {
@@ -214,11 +212,14 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                             let new_table = Owned::uniform_alloc(
                                 &self.allocator,
                                 tag as usize,
-                                Bucket::Branch(tag, Table::with_two_entries(
-                                    self.allocator.clone(),
-                                    actual,
-                                    entry.into_shared(guard),
-                                )),
+                                Bucket::Branch(
+                                    tag,
+                                    Table::with_two_entries(
+                                        self.allocator.clone(),
+                                        actual,
+                                        entry.into_shared(guard),
+                                    ),
+                                ),
                             );
                             bucket.store(new_table, Ordering::SeqCst);
                         }
@@ -248,8 +249,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     if res.is_ok() {
                         unsafe {
                             guard.defer_unchecked(|| {
-                                bucket_sharedptr
-                                    .uniform_dealloc(&self.allocator, *tag as usize);
+                                bucket_sharedptr.uniform_dealloc(&self.allocator, *tag as usize);
                             })
                         };
                     }
