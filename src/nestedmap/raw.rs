@@ -15,22 +15,29 @@ const TABLE_SIZE: usize = 32;
 
 pub struct Entry<K: Hash + Eq, V> {
     pub key: K,
-    pub alloc_tag: u8,
     pub value: V,
 }
 
 pub enum Bucket<K: Hash + Eq, V> {
-    Leaf(Entry<K, V>),
-    Branch(Table<K, V>),
+    Leaf(u8, Entry<K, V>),
+    Branch(u8, Table<K, V>),
 }
 
 impl<K: Hash + Eq, V> Bucket<K, V> {
     #[inline]
     fn key_ref(&self) -> &K {
-        if let Bucket::Leaf(entry) = self {
+        if let Bucket::Leaf(_, entry) = self {
             &entry.key
         } else {
             panic!("bucket unvalid key get")
+        }
+    }
+
+    #[inline]
+    fn tag(&self) -> u8 {
+        match self {
+            Bucket::Leaf(tag, _) => *tag,
+            Bucket::Branch(tag, _) => *tag,
         }
     }
 }
@@ -80,17 +87,8 @@ impl<K: Hash + Eq, V> Drop for Table<K, V> {
     fn drop(&mut self) {
         self.buckets.iter().for_each(|ptr| {
             let ptr = unsafe { ptr.load(Ordering::Relaxed, epoch::unprotected()) };
-            if let Some(r) = unsafe { ptr.as_ref() } {
-                match r {
-                    Bucket::Leaf(entry) => {
-                        let tag = entry.alloc_tag;
-                        ptr.uniform_dealloc(&self.allocator, tag as usize);
-                    }
-
-                    Bucket::Branch(_) => {
-                        ptr.uniform_dealloc(&self.allocator, 0);
-                    }
-                }
+            if !ptr.is_null() {
+                unsafe { ptr.uniform_dealloc(&self.allocator, ptr.deref().tag() as usize); }
             }
         });
     }
@@ -122,10 +120,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             table.buckets[entry_1_pos].store(entry_1, Ordering::SeqCst);
             table.buckets[entry_2_pos].store(entry_2, Ordering::SeqCst);
         } else {
+            let tag: u8 = rand::thread_rng().gen();
             table.buckets[entry_1_pos] = Atomic::uniform_alloc(
                 &table.allocator,
-                0,
-                Bucket::Branch(Table::with_two_entries(
+                tag as usize,
+                Bucket::Branch(tag, Table::with_two_entries(
                     table.allocator.clone(),
                     entry_1,
                     entry_2,
@@ -159,7 +158,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             let bucket_ref = unsafe { bucket_shared.deref() };
 
             match bucket_ref {
-                Bucket::Leaf(entry) => {
+                Bucket::Leaf(_, entry) => {
                     if &entry.key == key {
                         Some(TableRef {
                             guard: Some(guard),
@@ -170,7 +169,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     }
                 }
 
-                Bucket::Branch(table) => table.get(key, guard),
+                Bucket::Branch(_, table) => table.get(key, guard),
             }
         }
     }
@@ -197,23 +196,25 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
                 let entry = entry.take().unwrap();
                 match actual_ref {
-                    Bucket::Branch(ref table) => table.insert(entry, guard),
-                    Bucket::Leaf(ref old_entry) => {
+                    Bucket::Branch(_, ref table) => table.insert(entry, guard),
+                    Bucket::Leaf(actual_tag, ref old_entry) => {
                         if entry.key_ref() == &old_entry.key {
                             bucket.store(entry, Ordering::SeqCst);
                             unsafe {
                                 guard.defer_unchecked(|| {
                                     actual.uniform_dealloc(
                                         &self.allocator,
-                                        old_entry.alloc_tag as usize,
+                                        *actual_tag as usize,
                                     );
                                 })
                             }
                         } else {
+                            let tag: u8 = rand::thread_rng().gen();
+
                             let new_table = Owned::uniform_alloc(
                                 &self.allocator,
-                                0,
-                                Bucket::Branch(Table::with_two_entries(
+                                tag as usize,
+                                Bucket::Branch(tag, Table::with_two_entries(
                                     self.allocator.clone(),
                                     actual,
                                     entry.into_shared(guard),
@@ -235,8 +236,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
-                Bucket::Branch(table) => table.remove(key, guard),
-                Bucket::Leaf(entry) => {
+                Bucket::Branch(_, table) => table.remove(key, guard),
+                Bucket::Leaf(tag, _) => {
                     let res = self.buckets[key_pos].compare_and_set(
                         bucket_sharedptr,
                         sharedptr_null(),
@@ -248,7 +249,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                         unsafe {
                             guard.defer_unchecked(|| {
                                 bucket_sharedptr
-                                    .uniform_dealloc(&self.allocator, entry.alloc_tag as usize);
+                                    .uniform_dealloc(&self.allocator, *tag as usize);
                             })
                         };
                     }
