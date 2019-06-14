@@ -2,6 +2,7 @@ use std::mem;
 use slab::Slab;
 use hashbrown::HashMap;
 use std::collections::VecDeque;
+use parking_lot::Mutex;
 
 #[derive(Hash, PartialEq, Eq)]
 struct ObjectKey(usize);
@@ -80,11 +81,26 @@ impl<T> MemoryPool<T> {
     }
 }
 
-pub trait UniformAllocatorConfig {
-    const POOL_COUNT: usize;
-}
-
 pub struct UniformAllocator<T> {
     pool_count: usize,
-    pools: Box<[]>
+    pools: Box<[Mutex<MemoryPool<T>>]>,
+}
+
+impl<T> UniformAllocator<T> {
+    pub fn new(pool_count: usize) -> Self {
+        Self {
+            pool_count,
+            pools: (0..pool_count).map(|_| Mutex::new(MemoryPool::new())).collect::<Vec<_>>().into_boxed_slice(),
+        }
+    }
+
+    pub fn alloc(&self, tag: usize) -> *mut u8 {
+        let mut pool = self.pools[tag % self.pool_count].lock();
+        pool.alloc()
+    }
+
+    pub fn dealloc(self, tag: usize, ptr: *mut u8) {
+        let mut pool = self.pools[tag % self.pool_count].lock();
+        pool.dealloc(ptr);
+    }
 }
