@@ -4,13 +4,21 @@ use slab::Slab;
 use std::collections::VecDeque;
 use std::mem;
 
-// TODO shrinking
-// v3 ideas: bitmap based, segmented linked list (avoid too many allocs)
+// TODO shrinking, optimization
+//
+// v3 ideas:
+// 1. linked list of segments, each containing a bitmap to keep track of whats allocated and an array of buckets, segments dont have to be a linked list
+// some kind of tree might work aswell
+//
+// 2. a stack containing pointers to free chunks within a segment
+// to allocate just pop the stack, to dealloc, push to the stack, have multiple segments
+//
+// Unrelated idea: cache parts in a threadlocal cache, this maybe be segments or whatever
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
 struct ObjectKey(usize);
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
 struct Pointer(usize);
 
 const SEGMENT_SIZE: usize = 128;
@@ -34,7 +42,7 @@ impl<T> SlabSegment<T> {
     }
 
     fn alloc(&mut self) -> *mut u8 {
-        let key = self.objects.insert(unsafe { mem::zeroed() });
+        let key = self.objects.insert(unsafe { mem::uninitialized() });
         let ptr = unsafe { self.objects.get_unchecked_mut(key) as *mut T as usize };
         self.mappings.insert(Pointer(ptr), ObjectKey(key));
         ptr as *mut u8
