@@ -207,13 +207,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                                 })
                             }
                         } else {
-                            let tag: u8 = rand::thread_rng().gen();
-
                             let new_table = Owned::uniform_alloc(
                                 &self.allocator,
-                                tag as usize,
+                                *actual_tag as usize,
                                 Bucket::Branch(
-                                    tag,
+                                    *actual_tag,
                                     Table::with_two_entries(
                                         self.allocator.clone(),
                                         actual,

@@ -30,6 +30,7 @@ struct SlabSegment<T> {
 }
 
 impl<T> SlabSegment<T> {
+    #[inline]
     fn new(capacity: usize) -> Self {
         Self {
             objects: Slab::with_capacity(capacity),
@@ -37,10 +38,12 @@ impl<T> SlabSegment<T> {
         }
     }
 
+    #[inline]
     fn has_space(&self) -> usize {
         self.objects.len().saturating_sub(self.objects.capacity())
     }
 
+    #[inline]
     fn alloc(&mut self) -> *mut u8 {
         let key = self.objects.insert(unsafe { mem::uninitialized() });
         let ptr = unsafe { self.objects.get_unchecked_mut(key) as *mut T as usize };
@@ -48,6 +51,7 @@ impl<T> SlabSegment<T> {
         ptr as *mut u8
     }
 
+    #[inline]
     fn dealloc(&mut self, ptr: *mut u8) -> Option<T> {
         let ptr = ptr as usize;
         if let Some(key) = self.mappings.remove(&Pointer(ptr)) {
@@ -63,12 +67,14 @@ struct MemoryPool<T> {
 }
 
 impl<T> MemoryPool<T> {
+    #[inline]
     fn new() -> Self {
         Self {
             segments: VecDeque::new(),
         }
     }
 
+    #[inline]
     fn alloc(&mut self) -> *mut u8 {
         let mut search_idx = 0;
 
@@ -93,6 +99,7 @@ impl<T> MemoryPool<T> {
         }
     }
 
+    #[inline]
     fn dealloc(&mut self, ptr: *mut u8) -> Option<T> {
         for segment in &mut self.segments {
             if let Some(v) = segment.dealloc(ptr) {
@@ -110,6 +117,7 @@ pub struct UniformAllocator<T> {
 }
 
 impl<T> UniformAllocator<T> {
+    #[inline]
     pub fn new(pool_count: usize) -> Self {
         Self {
             pool_count,
@@ -120,12 +128,14 @@ impl<T> UniformAllocator<T> {
         }
     }
 
+    #[inline]
     pub fn alloc(&self, tag: usize) -> *mut u8 {
         let pool_idx = tag % self.pool_count;
         let mut pool = self.pools[pool_idx].lock();
         pool.alloc()
     }
 
+    #[inline]
     pub fn dealloc(&self, tag: usize, ptr: *mut u8) -> Option<T> {
         let pool_idx = tag % self.pool_count;
         let mut pool = self.pools[pool_idx].lock();
@@ -134,6 +144,7 @@ impl<T> UniformAllocator<T> {
 }
 
 impl<T> Default for UniformAllocator<T> {
+    #[inline]
     fn default() -> Self {
         Self::new(num_cpus::get() * 2)
     }
