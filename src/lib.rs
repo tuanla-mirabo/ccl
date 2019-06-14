@@ -8,3 +8,4 @@ pub mod timedcache;
 pub mod stack;
 pub mod group;
 mod util;
+mod uniform_allocator;
