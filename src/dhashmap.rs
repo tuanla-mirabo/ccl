@@ -94,7 +94,7 @@ where
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         if submap.contains_key(&key) {
             let or = OwningRef::new(submap);
-            let or = or.map(|v| &v[key]);
+            let or = or.map(|v| v.get(key).unwrap());
             Some(DHashMapRef { ptr: or })
         } else {
             None
