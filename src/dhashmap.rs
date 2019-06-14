@@ -5,6 +5,7 @@ use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
+use owning_ref::{OwningRef, OwningRefMut};
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -92,7 +93,9 @@ where
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         if submap.contains_key(&key) {
-            Some(DHashMapRef { lock: submap, key })
+            let or = OwningRef::new(submap);
+            let or = or.map(|v| &v[key]);
+            Some(DHashMapRef { ptr: or })
         } else {
             None
         }
@@ -110,7 +113,9 @@ where
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         if submap.contains_key(&key) {
-            Some(DHashMapRefMut { lock: submap, key })
+            let or = OwningRefMut::new(submap);
+            let or = or.map_mut(|v| v.get_mut(key).unwrap());
+            Some(DHashMapRefMut { ptr: or })
         } else {
             None
         }
@@ -269,8 +274,7 @@ pub struct DHashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    lock: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
-    key: &'a K,
+    ptr: OwningRef<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>, V>,
 }
 
 impl<'a, K, V> Deref for DHashMapRef<'a, K, V>
@@ -281,7 +285,7 @@ where
 
     #[inline]
     fn deref(&self) -> &V {
-        self.lock.get(self.key).unwrap()
+        &*self.ptr
     }
 }
 
@@ -290,8 +294,7 @@ pub struct DHashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    pub lock: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
-    pub key: &'a K,
+    ptr: OwningRefMut<parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>, V>,
 }
 
 impl<'a, K, V> Deref for DHashMapRefMut<'a, K, V>
@@ -302,7 +305,7 @@ where
 
     #[inline]
     fn deref(&self) -> &V {
-        self.lock.get(self.key).unwrap()
+        &*self.ptr
     }
 }
 
@@ -312,13 +315,26 @@ where
 {
     #[inline]
     fn deref_mut(&mut self) -> &mut V {
-        self.lock.get_mut(self.key).unwrap()
+        &mut *self.ptr
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn use_map(mut e: DHashMapRefMut<i32, i32>) {
+        *e *= 2;
+    }
+
+    #[test]
+    fn move_deref() {
+        let map = DHashMap::default();
+        map.insert(3, 69);
+        let e = map.index_mut(&3);
+        use_map(e);
+        println!("e: {}", *map.index_mut(&3));
+    }
 
     #[test]
     fn insert_then_assert_1024() {
