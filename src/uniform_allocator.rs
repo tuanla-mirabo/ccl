@@ -132,3 +132,9 @@ impl<T> UniformAllocator<T> {
         pool.dealloc(ptr)
     }
 }
+
+impl<T> Default for UniformAllocator<T> {
+    fn default() -> Self {
+        Self::new(num_cpus::get() * 2)
+    }
+}
