@@ -10,6 +10,8 @@ struct ObjectKey(usize);
 #[derive(Hash, PartialEq, Eq)]
 struct Pointer(usize);
 
+const SEGMENT_SIZE: usize = 128;
+
 struct SlabSegment<T> {
     objects: Slab<T>,
     mappings: HashMap<Pointer, ObjectKey>,
@@ -66,7 +68,7 @@ impl<T> MemoryPool<T> {
                     search_idx += 1;
                 }
             } else {
-                self.segments.push_back(SlabSegment::new(64));
+                self.segments.push_back(SlabSegment::new(SEGMENT_SIZE));
             }
         }
     }
