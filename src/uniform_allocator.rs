@@ -78,7 +78,7 @@ impl<T> MemoryPool<T> {
             }
         }
 
-        None
+        panic!("invalid ptr on dealloc");
     }
 }
 
