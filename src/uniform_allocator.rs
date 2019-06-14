@@ -79,3 +79,12 @@ impl<T> MemoryPool<T> {
         }
     }
 }
+
+pub trait UniformAllocatorConfig {
+    const POOL_COUNT: usize;
+}
+
+pub struct UniformAllocator<T> {
+    pool_count: usize,
+    pools: Box<[]>
+}
