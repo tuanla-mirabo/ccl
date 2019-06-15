@@ -11,7 +11,7 @@ use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-const TABLE_SIZE: usize = 32;
+const TABLE_SIZE: usize = 96;
 
 pub struct Entry<K: Hash + Eq, V> {
     pub key: K,
