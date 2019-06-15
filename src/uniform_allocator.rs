@@ -6,12 +6,15 @@ use std::mem;
 
 // TODO shrinking, optimization
 //
+//
 // v3 ideas:
+//
 // 1. linked list of segments, each containing a bitmap to keep track of whats allocated and an array of buckets, segments dont have to be a linked list
 // some kind of tree might work aswell
 //
 // 2. a stack containing pointers to free chunks within a segment
 // to allocate just pop the stack, to dealloc, push to the stack, have multiple segments
+//
 //
 // Unrelated idea: cache parts in a threadlocal cache, this maybe be segments or whatever
 
@@ -22,7 +25,7 @@ struct ObjectKey(usize);
 struct Pointer(usize);
 
 const SEGMENT_SIZE: usize = 128;
-const SEGMENT_MOVE_THRESHOLD: usize = SEGMENT_SIZE / 4;
+const SEGMENT_MOVE_THRESHOLD: usize = SEGMENT_SIZE / 8;
 
 struct SlabSegment<T> {
     objects: Slab<T>,
@@ -40,7 +43,7 @@ impl<T> SlabSegment<T> {
 
     #[inline]
     fn has_space(&self) -> usize {
-        self.objects.len().saturating_sub(self.objects.capacity())
+        self.objects.capacity() - self.objects.len()
     }
 
     #[inline]
@@ -84,10 +87,12 @@ impl<T> MemoryPool<T> {
 
                 if space != 0 {
                     let alloc = segment.alloc();
-                    if search_idx != 0 && space > SEGMENT_MOVE_THRESHOLD {
+
+                    if search_idx > (self.segments.len() / 4) && space > SEGMENT_MOVE_THRESHOLD {
                         let segment = self.segments.remove(search_idx).unwrap();
                         self.segments.push_front(segment);
                     }
+
                     return alloc;
                 } else {
                     search_idx += 1;
@@ -146,6 +151,6 @@ impl<T> UniformAllocator<T> {
 impl<T> Default for UniformAllocator<T> {
     #[inline]
     fn default() -> Self {
-        Self::new(num_cpus::get() * 2)
+        Self::new(num_cpus::get() * 4)
     }
 }
