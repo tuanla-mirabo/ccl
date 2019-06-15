@@ -13,6 +13,7 @@ pub trait UniformDeallocExt<T> {
 }
 
 impl<T> UniformAllocExt<T> for Atomic<T> {
+    #[inline]
     fn uniform_alloc(allocator: &UniformAllocator<T>, tag: usize, v: T) -> Self {
         let ptr = allocator.alloc(tag) as usize;
         unsafe {
@@ -25,6 +26,7 @@ impl<T> UniformAllocExt<T> for Atomic<T> {
 }
 
 impl<T> UniformDeallocExt<T> for Atomic<T> {
+    #[inline]
     fn uniform_dealloc(&self, allocator: &UniformAllocator<T>, tag: usize) -> Option<T> {
         unsafe {
             let ptr = self
@@ -36,6 +38,7 @@ impl<T> UniformDeallocExt<T> for Atomic<T> {
 }
 
 impl<T> UniformAllocExt<T> for Owned<T> {
+    #[inline]
     fn uniform_alloc(allocator: &UniformAllocator<T>, tag: usize, v: T) -> Self {
         let ptr = allocator.alloc(tag) as usize;
         unsafe {
@@ -46,6 +49,7 @@ impl<T> UniformAllocExt<T> for Owned<T> {
 }
 
 impl<'a, T> UniformDeallocExt<T> for Shared<'a, T> {
+    #[inline]
     fn uniform_dealloc(&self, allocator: &UniformAllocator<T>, tag: usize) -> Option<T> {
         let ptr = self.clone().into_usize();
         allocator.dealloc(tag, ptr as *mut u8)

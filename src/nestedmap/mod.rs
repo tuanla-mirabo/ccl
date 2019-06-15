@@ -26,10 +26,8 @@ pub struct NestedMap<K: Hash + Eq, V> {
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn new() -> Self {
-        let allocator_pool_count = num_cpus::get() * 2;
-
         Self {
-            root: Table::empty(Arc::new(UniformAllocator::new(allocator_pool_count))),
+            root: Table::empty(Arc::new(UniformAllocator::default())),
         }
     }
 

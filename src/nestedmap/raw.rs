@@ -11,7 +11,7 @@ use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-const TABLE_SIZE: usize = 32;
+const TABLE_SIZE: usize = 96;
 
 pub struct Entry<K: Hash + Eq, V> {
     pub key: K,
@@ -119,8 +119,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         };
 
         if entry_1_pos != entry_2_pos {
-            table.buckets[entry_1_pos].store(entry_1, Ordering::SeqCst);
-            table.buckets[entry_2_pos].store(entry_2, Ordering::SeqCst);
+            table.buckets[entry_1_pos].store(entry_1, Ordering::Relaxed);
+            table.buckets[entry_2_pos].store(entry_2, Ordering::Relaxed);
         } else {
             let tag: u8 = rand::thread_rng().gen();
             table.buckets[entry_1_pos] = Atomic::uniform_alloc(
@@ -151,7 +151,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
         let bucket_shared: Shared<'a, Bucket<K, V>> =
-            self.buckets[key_pos].load(Ordering::SeqCst, fake_guard);
+            self.buckets[key_pos].load(Ordering::Relaxed, fake_guard);
 
         if bucket_shared.is_null() {
             None
@@ -185,7 +185,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         match bucket.compare_and_set(
             sharedptr_null(),
             entry.take().unwrap(),
-            Ordering::SeqCst,
+            Ordering::Release,
             guard,
         ) {
             Ok(_) => {}
@@ -200,7 +200,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     Bucket::Branch(_, ref table) => table.insert(entry, guard),
                     Bucket::Leaf(actual_tag, ref old_entry) => {
                         if entry.key_ref() == &old_entry.key {
-                            bucket.store(entry, Ordering::SeqCst);
+                            bucket.store(entry, Ordering::Release);
                             unsafe {
                                 guard.defer_unchecked(|| {
                                     actual.uniform_dealloc(&self.allocator, *actual_tag as usize);
@@ -221,7 +221,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                                     ),
                                 ),
                             );
-                            bucket.store(new_table, Ordering::SeqCst);
+                            bucket.store(new_table, Ordering::Release);
                         }
                     }
                 }
@@ -233,7 +233,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     pub fn remove(&self, key: &K, guard: &Guard) {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
-        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::SeqCst, guard);
+        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::Acquire, guard);
 
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
@@ -242,7 +242,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     let res = self.buckets[key_pos].compare_and_set(
                         bucket_sharedptr,
                         sharedptr_null(),
-                        Ordering::SeqCst,
+                        Ordering::Release,
                         guard,
                     );
 
