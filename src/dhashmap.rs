@@ -258,7 +258,6 @@ where
     }
 }
 
-/// A shared reference into a DHashMap.
 pub struct DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
