@@ -209,14 +209,14 @@ where
 
     /// Iterate over chunks in a read only fashion.
     #[inline]
-    pub fn chunks_read(&self) -> impl Iterator<Item = TablesRead<K, V>> {
-        self.submaps.iter().map(|t| TablesRead::new(t.read()))
+    pub fn chunks_read(&self) -> impl Iterator<Item = Chunks<K, V>> {
+        self.submaps.iter().map(|t| Chunks::new(t.read()))
     }
 
     /// Iterate over chunks in a read-write fashion.
     #[inline]
-    pub fn chunks_write(&self) -> impl Iterator<Item = TablesReadWrite<K, V>> {
-        self.submaps.iter().map(|t| TablesReadWrite::new(t.write()))
+    pub fn chunks_write(&self) -> impl Iterator<Item = ChunksMut<K, V>> {
+        self.submaps.iter().map(|t| ChunksMut::new(t.write()))
     }
 
     #[inline]
@@ -254,14 +254,14 @@ where
 }
 
 /// A read only iterator interface to a chunk.
-pub struct TablesRead<'a, K, V>
+pub struct Chunks<'a, K, V>
 where
     K: Hash + Eq,
 {
     inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
 }
 
-impl<'a, K: 'a, V: 'a> TablesRead<'a, K, V>
+impl<'a, K: 'a, V: 'a> Chunks<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -277,14 +277,14 @@ where
 }
 
 /// A read-write iterator interface to a chunk.
-pub struct TablesReadWrite<'a, K, V>
+pub struct ChunksMut<'a, K, V>
 where
     K: Hash + Eq,
 {
     inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
 }
 
-impl<'a, K: 'a, V: 'a> TablesReadWrite<'a, K, V>
+impl<'a, K: 'a, V: 'a> ChunksMut<'a, K, V>
 where
     K: Hash + Eq,
 {
