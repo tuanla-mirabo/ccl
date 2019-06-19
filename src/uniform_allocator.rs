@@ -1,7 +1,7 @@
 use std::alloc::{alloc, dealloc, Layout};
-use std::ptr;
 use std::marker::PhantomData;
-use std::sync::atomic::{Ordering, AtomicUsize};
+use std::ptr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 // TODO: write v3
 //

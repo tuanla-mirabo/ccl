@@ -1,7 +1,7 @@
 //! Please see the struct level documentation.
 
-use hashbrown::HashMap;
 use ccl_owning_ref::{OwningRef, OwningRefMut};
+use hashbrown::HashMap;
 use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -42,11 +42,11 @@ where
     /// The amount of chunks used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
-    pub fn new(submaps_exp_of_two_pow: usize) -> Self {
-        let ncm = 1 << submaps_exp_of_two_pow;
+    pub fn new(num_chunks_log_2: u8) -> Self {
+        let ncm = 1 << num_chunks_log_2 as usize;
 
         Self {
-            ncb: submaps_exp_of_two_pow,
+            ncb: num_chunks_log_2 as usize,
             submaps: (0..ncm)
                 .map(|_| RwLock::new(HashMap::new()))
                 .collect::<Vec<_>>()
@@ -58,12 +58,12 @@ where
     /// Create a new DHashMap with a specified capacity.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
-    pub fn with_capacity(submaps_exp_of_two_pow: usize, capacity: usize) -> Self {
-        let ncm = 1 << submaps_exp_of_two_pow;
+    pub fn with_capacity(num_chunks_log_2: u8, capacity: usize) -> Self {
+        let ncm = 1 << num_chunks_log_2 as usize;
         let cpm = capacity / ncm;
 
         Self {
-            ncb: submaps_exp_of_two_pow,
+            ncb: num_chunks_log_2 as usize,
             submaps: (0..ncm)
                 .map(|_| RwLock::new(HashMap::with_capacity(cpm)))
                 .collect::<Vec<_>>()
@@ -90,7 +90,7 @@ where
 
     /// Get a shared reference to an element contained within the map.
     #[inline]
-    pub fn get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
+    pub fn get(&'a self, key: &K) -> Option<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         if submap.contains_key(&key) {
@@ -104,7 +104,7 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get(&'a self, key: &'a K) -> TryGetResult<DHashMapRef<'a, K, V>> {
+    pub fn try_get(&'a self, key: &K) -> TryGetResult<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read() } {
             if submap.contains_key(&key) {
@@ -121,13 +121,13 @@ where
 
     /// Shortcut for a get followed by an unwrap.
     #[inline]
-    pub fn index(&'a self, key: &'a K) -> DHashMapRef<'a, K, V> {
+    pub fn index(&'a self, key: &K) -> DHashMapRef<'a, K, V> {
         self.get(key).unwrap()
     }
 
     /// Get a unique reference to an element contained within the map.
     #[inline]
-    pub fn get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
+    pub fn get_mut(&'a self, key: &K) -> Option<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         if submap.contains_key(&key) {
@@ -141,7 +141,7 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get_mut(&'a self, key: &'a K) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
+    pub fn try_get_mut(&'a self, key: &K) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write() } {
             if submap.contains_key(&key) {
@@ -158,7 +158,7 @@ where
 
     /// Shortcut for a get_mut followed by an unwrap.
     #[inline]
-    pub fn index_mut(&'a self, key: &'a K) -> DHashMapRefMut<'a, K, V> {
+    pub fn index_mut(&'a self, key: &K) -> DHashMapRefMut<'a, K, V> {
         self.get_mut(key).unwrap()
     }
 
@@ -203,19 +203,19 @@ where
     /// Apply a function to every item in the map.
     #[inline]
     pub fn alter<F: FnMut((&K, &mut V)) + Clone>(&self, f: F) {
-        self.tables_write()
+        self.chunks_write()
             .for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
     /// Iterate over chunks in a read only fashion.
     #[inline]
-    pub fn tables_read(&self) -> impl Iterator<Item = SMRInterface<K, V>> {
+    pub fn chunks_read(&self) -> impl Iterator<Item = SMRInterface<K, V>> {
         self.submaps.iter().map(|t| SMRInterface::new(t.read()))
     }
 
     /// Iterate over chunks in a read-write fashion.
     #[inline]
-    pub fn tables_write(&self) -> impl Iterator<Item = SMRWInterface<K, V>> {
+    pub fn chunks_write(&self) -> impl Iterator<Item = SMRWInterface<K, V>> {
         self.submaps.iter().map(|t| SMRWInterface::new(t.write()))
     }
 
@@ -241,11 +241,11 @@ where
         let vcount = num_cpus::get() * 8;
 
         let base: usize = 2;
-        let mut p2exp: u32 = 1;
+        let mut p2exp: u8 = 1;
 
         loop {
-            if vcount <= base.pow(p2exp) {
-                return Self::new(p2exp as usize);
+            if vcount <= base.pow(u32::from(p2exp)) {
+                return Self::new(p2exp);
             } else {
                 p2exp += 1;
             }
