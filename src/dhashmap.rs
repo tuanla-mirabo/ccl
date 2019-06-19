@@ -6,6 +6,7 @@ use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -207,6 +208,10 @@ where
             .for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
+    pub fn iter(&'a self) -> Iter<'a, K, V> {
+        Iter::new(self)
+    }
+
     /// Iterate over chunks in a read only fashion.
     #[inline]
     pub fn chunks(&self) -> impl Iterator<Item = Chunk<K, V>> {
@@ -250,6 +255,80 @@ where
                 p2exp += 1;
             }
         }
+    }
+}
+
+/// A shared reference into a DHashMap.
+pub struct DHashMapIterRef<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    ptr: OwningRef<Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>, V>,
+}
+
+impl<'a, K, V> Deref for DHashMapIterRef<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Target = V;
+
+    #[inline]
+    fn deref(&self) -> &V {
+        &*self.ptr
+    }
+}
+
+pub struct Iter<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    c_map_index: usize,
+    map: &'a DHashMap<K, V>,
+    c_iter: Option<(Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>, hashbrown::hash_map::Iter<'a, K, V>)>,
+}
+
+impl<'a, K, V> Iter<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    fn new(map: &'a DHashMap<K, V>) -> Self {
+        Self {
+            c_map_index: 0,
+            map,
+            c_iter: None,
+        }
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Item = DHashMapIterRef<'a, K, V>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(c_iter) = &mut self.c_iter {
+            if let Some(i) = c_iter.1.next() {
+                let or = OwningRef::new(c_iter.0.clone());
+                let or = or.map(|v| v.get(i.0).unwrap());
+                return Some(DHashMapIterRef {
+                    ptr: or,
+                });
+            }
+        }
+
+        if self.c_map_index == self.map.submaps.len() {
+            return None;
+        }
+
+        let guard = Rc::into_raw(Rc::new(self.map.submaps[self.c_map_index].read()));
+        let iter = unsafe { (&*guard).iter() };
+
+        std::mem::replace(&mut self.c_iter, Some((unsafe { Rc::from_raw(guard) }, iter)));
+
+        self.c_map_index += 1;
+        self.next()
     }
 }
 
@@ -393,5 +472,18 @@ mod tests {
         for i in 0..1024_i32 {
             assert_eq!(i * 4, *map.get(&i).unwrap());
         }
+    }
+
+    #[test]
+    fn insert_then_iter_1024() {
+        let map = DHashMap::default();
+
+        for i in 0..1024_i32 {
+            map.insert(i, i * 2);
+        }
+
+        map.alter(|(_, v)| *v *= 2);
+
+        assert_eq!(map.iter().count(), 1024);
     }
 }
