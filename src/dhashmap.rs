@@ -261,6 +261,7 @@ where
     }
 }
 
+/// A shared reference into a DHashMap created from an iterator.
 pub struct DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
@@ -274,11 +275,13 @@ impl<'a, K, V> DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
+    /// Get the key of the entry.
     #[inline]
     pub fn key(&self) -> &K {
         self.ptr_k
     }
 
+    /// Get the value of the entry.
     #[inline]
     pub fn value(&self) -> &V {
         self.ptr_v
@@ -307,6 +310,7 @@ where
     }
 }
 
+/// An immutable iterator over a DHashMap.
 #[allow(clippy::type_complexity)]
 pub struct Iter<'a, K, V>
 where
