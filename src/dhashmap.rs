@@ -208,6 +208,8 @@ where
             .for_each(|mut t| t.iter_mut().for_each(f.clone()))
     }
 
+    /// Iterate over the (K, V) pairs stored in the map.
+    #[inline]
     pub fn iter(&'a self) -> Iter<'a, K, V> {
         Iter::new(self)
     }
@@ -271,10 +273,12 @@ impl<'a, K, V> DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
+    #[inline]
     pub fn key(&self) -> &K {
         self.ptr_k
     }
 
+    #[inline]
     pub fn value(&self) -> &V {
         self.ptr_v
     }
@@ -302,6 +306,7 @@ where
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub struct Iter<'a, K, V>
 where
     K: Hash + Eq,
@@ -324,6 +329,23 @@ where
             map,
             c_iter: None,
         }
+    }
+
+    fn slow_path_new_chunk(&mut self) -> Option<DHashMapIterRef<'a, K, V>> {
+        if self.c_map_index == self.map.submaps.len() {
+            return None;
+        }
+
+        let guard = Rc::into_raw(Rc::new(self.map.submaps[self.c_map_index].read()));
+        let iter = unsafe { (&*guard).iter() };
+
+        std::mem::replace(
+            &mut self.c_iter,
+            Some((unsafe { Rc::from_raw(guard) }, iter)),
+        );
+
+        self.c_map_index += 1;
+        self.next()
     }
 }
 
@@ -351,20 +373,7 @@ where
             }
         }
 
-        if self.c_map_index == self.map.submaps.len() {
-            return None;
-        }
-
-        let guard = Rc::into_raw(Rc::new(self.map.submaps[self.c_map_index].read()));
-        let iter = unsafe { (&*guard).iter() };
-
-        std::mem::replace(
-            &mut self.c_iter,
-            Some((unsafe { Rc::from_raw(guard) }, iter)),
-        );
-
-        self.c_map_index += 1;
-        self.next()
+        self.slow_path_new_chunk()
     }
 }
 
