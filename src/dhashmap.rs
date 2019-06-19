@@ -263,7 +263,32 @@ pub struct DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    ptr: OwningRef<Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>, V>,
+    guard: Option<Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>>,
+    ptr_k: &'a K,
+    ptr_v: &'a V,
+}
+
+impl<'a, K, V> DHashMapIterRef<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    pub fn key(&self) -> &K {
+        self.ptr_k
+    }
+
+    pub fn value(&self) -> &V {
+        self.ptr_v
+    }
+}
+
+impl<'a, K, V> Drop for DHashMapIterRef<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    #[inline]
+    fn drop(&mut self) {
+        self.guard.take();
+    }
 }
 
 impl<'a, K, V> Deref for DHashMapIterRef<'a, K, V>
@@ -274,7 +299,7 @@ where
 
     #[inline]
     fn deref(&self) -> &V {
-        &*self.ptr
+        self.ptr_v
     }
 }
 
@@ -310,11 +335,17 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(c_iter) = &mut self.c_iter {
             if let Some(i) = c_iter.1.next() {
-                let or = OwningRef::new(c_iter.0.clone());
-                let or = or.map(|v| v.get(i.0).unwrap());
-                return Some(DHashMapIterRef {
-                    ptr: or,
-                });
+                let guard = Some(c_iter.0.clone());
+                unsafe {
+                    let ptr_k = &*(i.0 as *const _);
+                    let ptr_v = &*(i.1 as *const _);
+
+                    return Some(DHashMapIterRef {
+                        guard,
+                        ptr_k,
+                        ptr_v,
+                    });
+                }
             }
         }
 
