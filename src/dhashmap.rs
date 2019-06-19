@@ -309,7 +309,10 @@ where
 {
     c_map_index: usize,
     map: &'a DHashMap<K, V>,
-    c_iter: Option<(Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>, hashbrown::hash_map::Iter<'a, K, V>)>,
+    c_iter: Option<(
+        Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>,
+        hashbrown::hash_map::Iter<'a, K, V>,
+    )>,
 }
 
 impl<'a, K, V> Iter<'a, K, V>
@@ -356,7 +359,10 @@ where
         let guard = Rc::into_raw(Rc::new(self.map.submaps[self.c_map_index].read()));
         let iter = unsafe { (&*guard).iter() };
 
-        std::mem::replace(&mut self.c_iter, Some((unsafe { Rc::from_raw(guard) }, iter)));
+        std::mem::replace(
+            &mut self.c_iter,
+            Some((unsafe { Rc::from_raw(guard) }, iter)),
+        );
 
         self.c_map_index += 1;
         self.next()
