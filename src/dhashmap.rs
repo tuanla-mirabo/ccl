@@ -102,7 +102,7 @@ where
         }
     }
 
-    /// Same as above but will return None if the method would block.
+    /// Same as above but will return an error if the method would block at the current time.
     #[inline]
     pub fn try_get(&'a self, key: &'a K) -> TryGetResult<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
@@ -139,7 +139,7 @@ where
         }
     }
 
-    /// Same as above but will return None if the method would block.
+    /// Same as above but will return an error if the method would block at the current time.
     #[inline]
     pub fn try_get_mut(&'a self, key: &'a K) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
