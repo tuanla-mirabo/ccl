@@ -354,13 +354,13 @@ where
     }
 }
 
-/// A error possibly return by the try_get family of methods for DHashMap.
+/// A error possibly returned by the try_get family of methods for DHashMap.
 pub enum TryGetError {
     InvalidKey,
     WouldBlock,
 }
 
-/// Alias for a Result with the TryGetError as it's error type.
+/// Alias for a Result with TryGetError as it's error type.
 pub type TryGetResult<T> = Result<T, TryGetError>;
 
 #[cfg(test)]
