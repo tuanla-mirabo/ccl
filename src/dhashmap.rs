@@ -104,18 +104,18 @@ where
 
     /// Same as above but will return None if the method would block.
     #[inline]
-    pub fn try_get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
+    pub fn try_get(&'a self, key: &'a K) -> TryGetResult<DHashMapRef<'a, K, V>> {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read() } {
             if submap.contains_key(&key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                Some(DHashMapRef { ptr: or })
+                Ok(DHashMapRef { ptr: or })
             } else {
-                None
+                Err(TryGetError::InvalidKey)
             }
         } else {
-            None
+            Err(TryGetError::WouldBlock)
         }
     }
 
@@ -141,18 +141,18 @@ where
 
     /// Same as above but will return None if the method would block.
     #[inline]
-    pub fn try_get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
+    pub fn try_get_mut(&'a self, key: &'a K) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write() } {
             if submap.contains_key(&key) {
                 let or = OwningRefMut::new(submap);
                 let or = or.map_mut(|v| v.get_mut(key).unwrap());
-                Some(DHashMapRefMut { ptr: or })
+                Ok(DHashMapRefMut { ptr: or })
             } else {
-                None
+                Err(TryGetError::InvalidKey)
             }
         } else {
-            None
+            Err(TryGetError::WouldBlock)
         }
     }
 
@@ -353,6 +353,15 @@ where
         &mut *self.ptr
     }
 }
+
+/// A error possibly return by the try_get family of methods for DHashMap.
+pub enum TryGetError {
+    InvalidKey,
+    WouldBlock,
+}
+
+/// Alias for a Result with the TryGetError as it's error type.
+pub type TryGetResult<T> = Result<T, TryGetError>;
 
 #[cfg(test)]
 mod tests {
