@@ -1,7 +1,7 @@
 //! Please see the struct level documentation.
 
 use hashbrown::HashMap;
-use owning_ref::{OwningRef, OwningRefMut};
+use ccl_owning_ref::{OwningRef, OwningRefMut};
 use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
