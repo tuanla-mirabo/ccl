@@ -243,7 +243,7 @@ fn main() {
 ```
 */
 
-extern crate stable_deref_trait;
+extern crate ccl_stable_deref_trait as stable_deref_trait;
 pub use stable_deref_trait::{StableDeref as StableAddress, CloneStableDeref as CloneStableAddress};
 
 /// An owning reference.
