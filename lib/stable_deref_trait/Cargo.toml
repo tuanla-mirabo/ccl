@@ -1,6 +1,6 @@
 [package]
-name = "stable_deref_trait"
-version = "1.1.1"
+name = "ccl_stable_deref_trait"
+version = "1.0.0"
 authors = ["Robert Grosse <n210241048576@gmail.com>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
