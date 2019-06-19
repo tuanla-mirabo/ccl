@@ -102,6 +102,23 @@ where
         }
     }
 
+    /// Same as above but will return None if the method would block.
+    #[inline]
+    pub fn try_get(&'a self, key: &'a K) -> Option<DHashMapRef<'a, K, V>> {
+        let mapi = self.determine_map(&key);
+        if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read() } {
+            if submap.contains_key(&key) {
+                let or = OwningRef::new(submap);
+                let or = or.map(|v| v.get(key).unwrap());
+                Some(DHashMapRef { ptr: or })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     /// Shortcut for a get followed by an unwrap.
     #[inline]
     pub fn index(&'a self, key: &'a K) -> DHashMapRef<'a, K, V> {
@@ -117,6 +134,23 @@ where
             let or = OwningRefMut::new(submap);
             let or = or.map_mut(|v| v.get_mut(key).unwrap());
             Some(DHashMapRefMut { ptr: or })
+        } else {
+            None
+        }
+    }
+
+    /// Same as above but will return None if the method would block.
+    #[inline]
+    pub fn try_get_mut(&'a self, key: &'a K) -> Option<DHashMapRefMut<'a, K, V>> {
+        let mapi = self.determine_map(&key);
+        if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write() } {
+            if submap.contains_key(&key) {
+                let or = OwningRefMut::new(submap);
+                let or = or.map_mut(|v| v.get_mut(key).unwrap());
+                Some(DHashMapRefMut { ptr: or })
+            } else {
+                None
+            }
         } else {
             None
         }
