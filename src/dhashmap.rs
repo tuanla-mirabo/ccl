@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// One of those limits is iteration, you cannot iterate over the elements directly.
 /// Instead you have to iterate over chunks which can iterate over KV pairs.
 /// This is needed in order to use the calling thread stack as scratch space to avoid heap allocations.
+/// The iter method provides a more ergonomic immutable iterator but it does require an allocation for every chunk.
 ///
 /// Unsafe is used to avoid bounds checking when accessing chunks.
 /// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of chunks.
