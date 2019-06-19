@@ -365,16 +365,14 @@ where
         if let Some(c_iter) = &mut self.c_iter {
             if let Some(i) = c_iter.1.next() {
                 let guard = Some(c_iter.0.clone());
-                unsafe {
-                    let ptr_k = &*(i.0 as *const _);
-                    let ptr_v = &*(i.1 as *const _);
+                let ptr_k = unsafe { &*(i.0 as *const _) };
+                let ptr_v = unsafe { &*(i.1 as *const _) };
 
-                    return Some(DHashMapIterRef {
-                        guard,
-                        ptr_k,
-                        ptr_v,
-                    });
-                }
+                return Some(DHashMapIterRef {
+                    guard,
+                    ptr_k,
+                    ptr_v,
+                });
             }
         }
 
