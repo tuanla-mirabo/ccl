@@ -8,6 +8,8 @@ use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
+pub mod interface;
+
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
 /// The API mostly matches that of the standard library hashmap but there are some
@@ -16,7 +18,9 @@ use std::sync::Arc;
 /// One of those limits is iteration, you cannot iterate over the elements directly.
 /// Instead you have to iterate over chunks which can iterate over KV pairs.
 /// This is needed in order to use the calling thread stack as scratch space to avoid heap allocations.
-/// The iter method provides a more ergonomic immutable iterator but it does require an allocation for every chunk.
+///
+/// The iter method currently provides a more ergonomic immutable iterator that is slightly less performant.
+/// It should be extremely performant still but it is a tad slower than using the chunks interface.
 ///
 /// Unsafe is used to avoid bounds checking when accessing chunks.
 /// This is guaranteed to be safe since we cannot possibly get a value higher than the amount of chunks.
@@ -228,7 +232,12 @@ where
     }
 
     #[inline]
-    fn determine_map(&self, key: &K) -> usize {
+    pub fn interface(&'a self) -> interface::Interface<'a, K, V> {
+        interface::Interface::new(self)
+    }
+
+    #[inline]
+    pub(crate) fn determine_map(&self, key: &K) -> usize {
         let mut hash_state = fxhash::FxHasher64::default();
         hash_state.write_u64(self.hash_nonce);
         key.hash(&mut hash_state);
@@ -237,6 +246,16 @@ where
         let shift = 64 - self.ncb;
 
         (hash >> shift) as usize
+    }
+
+    #[inline]
+    pub(crate) fn chunks_count(&self) -> usize {
+        self.submaps.len()
+    }
+
+    #[inline]
+    pub(crate) fn get_submap(&self, idx: usize) -> &RwLock<HashMap<K, V>> {
+        &self.submaps[idx]
     }
 }
 
