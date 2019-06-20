@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -266,7 +266,7 @@ pub struct DHashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    guard: Option<Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>>,
+    guard: Option<Arc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>>,
     ptr_k: &'a K,
     ptr_v: &'a V,
 }
@@ -319,7 +319,7 @@ where
     c_map_index: usize,
     map: &'a DHashMap<K, V>,
     c_iter: Option<(
-        Rc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>,
+        Arc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>,
         hashbrown::hash_map::Iter<'a, K, V>,
     )>,
 }
@@ -341,12 +341,12 @@ where
             return None;
         }
 
-        let guard = Rc::into_raw(Rc::new(self.map.submaps[self.c_map_index].read()));
+        let guard = Arc::into_raw(Arc::new(self.map.submaps[self.c_map_index].read()));
         let iter = unsafe { (&*guard).iter() };
 
         std::mem::replace(
             &mut self.c_iter,
-            Some((unsafe { Rc::from_raw(guard) }, iter)),
+            Some((unsafe { Arc::from_raw(guard) }, iter)),
         );
 
         self.c_map_index += 1;
