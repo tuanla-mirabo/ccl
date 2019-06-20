@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 use ccl_owning_ref::OwningRef;
 
 pub enum InterfaceError {
-    Other,
+    LockHeld,
     InvalidKey,
 }
 
@@ -62,7 +62,11 @@ impl<'a, K: Hash + Eq, V> Interface<'a, K, V> {
     pub fn get(&'a mut self, key: &K) -> InterfaceResult<DHashMapInterfaceRef<'a, K, V>> {
         let idx = self.map.determine_map(key);
         self.fetch_lock(idx, false);
-        let map = self.locks[idx].as_ref().unwrap().borrow();
+        let map = if let Ok(r) = self.locks[idx].as_ref().unwrap().try_borrow() {
+            r
+        } else {
+            return Err(InterfaceError::LockHeld);
+        };
 
         if map.read().contains_key(key) {
             let or = OwningRef::new(map);
