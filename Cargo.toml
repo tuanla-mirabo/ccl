@@ -13,15 +13,14 @@ keywords = ["atomic", "concurrent", "map", "parallel", "hashmap"]
 categories = ["concurrency", "algorithms", "data-structures"]
 
 [features]
-nightly = ["parking_lot/nightly", "hashbrown/nightly"]
+nightly = ["parking_lot/nightly", "hashbrown/nightly", "crossbeam-epoch/nightly"]
 
 [dependencies]
-ccl-fxhash = { version = "3.0.0", features = ["std"] }
 hashbrown = "0.5.0"
 parking_lot = "0.8.0"
 rand = "0.6.5"
 num_cpus = "1.10.1"
-crossbeam-epoch = "0.7.1"
+crossbeam-epoch = { path = "lib/crossbeam/crossbeam-epoch" }
 seahash = "3.0.6"
 ccl_owning_ref = "0.4.0"
 

@@ -10,6 +10,7 @@ use std::mem;
 use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use crate::util::UnsafeOption;
 
 const TABLE_SIZE: usize = 96;
 
@@ -110,11 +111,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     ) -> Self {
         let mut table = Self::empty(allocator);
         let entry_1_pos = unsafe {
-            util::hash_with_nonce(entry_1.as_ref().unwrap().key_ref(), table.nonce) as usize
+            util::hash_with_nonce(entry_1.as_ref().unsafe_unwrap().key_ref(), table.nonce) as usize
                 % TABLE_SIZE
         };
         let entry_2_pos = unsafe {
-            util::hash_with_nonce(entry_2.as_ref().unwrap().key_ref(), table.nonce) as usize
+            util::hash_with_nonce(entry_2.as_ref().unsafe_unwrap().key_ref(), table.nonce) as usize
                 % TABLE_SIZE
         };
 
@@ -184,7 +185,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
         match bucket.compare_and_set(
             sharedptr_null(),
-            entry.take().unwrap(),
+            unsafe { entry.unsafe_take().unsafe_unwrap() },
             Ordering::Release,
             guard,
         ) {
@@ -195,7 +196,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                 let actual = err.current;
                 let actual_ref = unsafe { actual.as_ref().expect("insert1 null") };
 
-                let entry = entry.take().unwrap();
+                let entry = unsafe { entry.unsafe_take().unsafe_unwrap() };
                 match actual_ref {
                     Bucket::Branch(_, ref table) => table.insert(entry, guard),
                     Bucket::Leaf(actual_tag, ref old_entry) => {

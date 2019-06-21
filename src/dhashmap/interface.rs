@@ -1,8 +1,8 @@
 use super::*;
 use std::hash::Hash;
 use hashbrown::HashMap;
-use std::cell::{RefCell, Ref, RefMut};
-use std::ops::{Deref, DerefMut};
+use std::cell::{RefCell, Ref};
+use std::ops::Deref;
 use ccl_owning_ref::OwningRef;
 
 pub enum InterfaceError {

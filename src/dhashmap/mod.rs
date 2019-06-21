@@ -238,7 +238,7 @@ where
 
     #[inline]
     pub(crate) fn determine_map(&self, key: &K) -> usize {
-        let mut hash_state = fxhash::FxHasher64::default();
+        let mut hash_state = seahash::SeaHasher::new();
         hash_state.write_u64(self.hash_nonce);
         key.hash(&mut hash_state);
 

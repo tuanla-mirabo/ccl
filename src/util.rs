@@ -3,6 +3,7 @@ use crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared};
 use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::sync::atomic::Ordering;
+use std::mem;
 
 pub trait UniformAllocExt<T> {
     fn uniform_alloc(allocator: &UniformAllocator<T>, tag: usize, v: T) -> Self;
@@ -67,4 +68,24 @@ pub fn hash_with_nonce<T: Hash>(v: &T, nonce: u8) -> u64 {
 #[inline]
 pub fn sharedptr_null<'a, T>() -> Shared<'a, T> {
     unsafe { Shared::from_usize(0) }
+}
+
+pub trait UnsafeOption<T> {
+    unsafe fn unsafe_unwrap(self) -> T;
+    unsafe fn unsafe_take(&mut self) -> Option<T>;
+}
+
+impl<T> UnsafeOption<T> for Option<T> {
+    #[inline]
+    unsafe fn unsafe_unwrap(self) -> T {
+        match self {
+            None => std::hint::unreachable_unchecked(),
+            Some(v) => v,
+        }
+    }
+
+    #[inline]
+    unsafe fn unsafe_take(&mut self) -> Option<T> {
+        mem::replace(self, None)
+    }
 }
