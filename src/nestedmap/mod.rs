@@ -11,10 +11,77 @@ use crate::util::UniformAllocExt;
 use ccl_crossbeam_epoch::{self as epoch, Guard, Owned};
 use rand::prelude::*;
 pub use raw::{TableRef, TableIter};
-use raw::{Bucket, Entry, Table};
+use raw::{Bucket, Entry as RawEntry, Table};
 use std::hash::Hash;
 use std::sync::Arc;
 use std::rc::Rc;
+
+pub struct OccupiedEntry<'a, K: Hash + Eq, V> {
+    map: &'a NestedMap<K, V>,
+    guard: Guard,
+    r: TableRef<'a, K, V>,
+    key: K,
+}
+
+impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
+    pub fn new(guard: Guard, map: &'a NestedMap<K, V>, r: TableRef<'a, K, V>, key: K) -> Self {
+        Self {
+            map,
+            guard,
+            r,
+            key,
+        }
+    }
+
+    pub fn key(&self) -> &K {
+        self.r.key()
+    }
+
+    pub fn remove(self) {
+        self.map.remove_with_guard(self.r.key(), &self.guard);
+    }
+
+    pub fn get(&self) -> &V {
+        self.r.value()
+    }
+
+    pub fn insert(self, value: V) {
+        self.map.insert_with_guard(self.key, value, &self.guard);
+    }
+}
+
+pub struct VacantEntry<'a, K: Hash + Eq, V> {
+    map: &'a NestedMap<K, V>,
+    guard: Guard,
+    key: K,
+}
+
+impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
+    pub fn new(guard: Guard, map: &'a NestedMap<K, V>, key: K) -> Self {
+        Self {
+            map,
+            guard,
+            key,
+        }
+    }
+
+    pub fn insert(self, value: V) {
+        self.map.insert_with_guard(self.key, value, &self.guard);
+    }
+
+    pub fn into_key(self) -> K {
+        self.key
+    }
+
+    pub fn key(&self) -> &K {
+        &self.key
+    }
+}
+
+pub enum Entry<'a, K: Hash + Eq, V> {
+    Occupied(OccupiedEntry<'a, K, V>),
+    Vacant(VacantEntry<'a, K, V>),
+}
 
 #[inline]
 pub fn aquire_guard() -> Guard {
@@ -45,7 +112,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         let bucket = Owned::uniform_alloc(
             self.root.allocator(),
             tag as usize,
-            Bucket::Leaf(tag, Entry { key, value }),
+            Bucket::Leaf(tag, RawEntry { key, value }),
         );
         self.root.insert(bucket, guard);
     }
@@ -88,6 +155,16 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn len(&self) -> usize {
         let guard = &epoch::pin();
         self.root.len(guard)
+    }
+
+    #[inline]
+    pub fn entry(&'a self, key: K) -> Entry<'a, K, V> {
+        let guard = epoch::pin();
+
+        match self.get(&key) {
+            None => Entry::Vacant(VacantEntry::new(guard, self, key)),
+            Some(r) => Entry::Occupied(OccupiedEntry::new(guard, self, r, key)),
+        }
     }
 }
 
