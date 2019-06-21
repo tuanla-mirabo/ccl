@@ -3,3 +3,4 @@
 Cargo.lock
 /ccl-bench/target
 /ccl-bench/**/*.rs.bk
+/lib/ccl-crossbeam-epoch/target
