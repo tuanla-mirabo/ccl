@@ -83,6 +83,12 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         let guard = Rc::new(epoch::pin());
         self.root.iter(guard)
     }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        let guard = &epoch::pin();
+        self.root.len(guard)
+    }
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {

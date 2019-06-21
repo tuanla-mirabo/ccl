@@ -274,6 +274,28 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
             current_subiter: Box::new(None),
         }
     }
+
+    #[inline]
+    pub fn len(&self, guard: &'a Guard) -> usize {
+        let mut l = 0;
+        let mut idx = 0;
+
+        while idx < TABLE_SIZE {
+            let bucket_shared: Shared<'a, Bucket<K, V>> =
+                self.buckets[idx].load(Ordering::Relaxed, guard);
+
+            if let Some(r) = unsafe { bucket_shared.as_ref() } {
+                match r {
+                    Bucket::Leaf(_, _) => l += 1,
+                    Bucket::Branch(_, table) => l += table.len(guard),
+                }
+            }
+
+            idx += 1;
+        }
+
+        l
+    }
 }
 
 pub struct TableIter<'a, K: Hash + Eq, V> {
@@ -293,7 +315,12 @@ impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
         }
 
         if let Some(subiter) = &mut *self.current_subiter {
-            return subiter.next();
+            if let Some(v) = subiter.next() {
+                return Some(v);
+            } else {
+                *self.current_subiter = None;
+                return self.next();
+            }
         }
 
         let bucket_shared: Shared<'a, Bucket<K, V>> =
@@ -302,7 +329,7 @@ impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
         self.idx += 1;
 
         if bucket_shared.is_null() {
-            return None;
+            return self.next();
         }
 
         let bucket_ref = unsafe { bucket_shared.deref() };

@@ -24,3 +24,29 @@ fn insert_rayon() {
         map.insert(i, i * 7);
     });
 }
+
+#[test]
+fn len() {
+    let map = NestedMap::default();
+
+    for i in 0..1024_i32 {
+        map.insert(i, i);
+    }
+
+    assert_eq!(map.len(), 1024);
+}
+
+#[test]
+fn iter_count() {
+    let map = NestedMap::default();
+
+    for i in 0..1024_i32 {
+        map.insert(i, i);
+    }
+
+    for r in map.iter() {
+        assert!(*r >= 0 && *r < 1024);
+    }
+
+    assert_eq!(map.iter().count(), 1024);
+}
