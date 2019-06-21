@@ -1,5 +1,5 @@
 use crate::uniform_allocator::UniformAllocator;
-use crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared};
+use ccl_crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared};
 use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::sync::atomic::Ordering;

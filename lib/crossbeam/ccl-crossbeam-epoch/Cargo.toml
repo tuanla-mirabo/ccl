@@ -1,5 +1,5 @@
 [package]
-name = "crossbeam-epoch"
+name = "ccl-crossbeam-epoch"
 # When publishing a new version:
 # - Update CHANGELOG.md
 # - Update README.md

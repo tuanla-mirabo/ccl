@@ -8,7 +8,7 @@ mod tests;
 
 use crate::uniform_allocator::UniformAllocator;
 use crate::util::UniformAllocExt;
-use crossbeam_epoch::{self as epoch, Guard, Owned};
+use ccl_crossbeam_epoch::{self as epoch, Guard, Owned};
 use rand::prelude::*;
 pub use raw::TableRef;
 use raw::{Bucket, Entry, Table};

@@ -1,6 +1,6 @@
 //! Please see the struct level documentation.
 
-use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Pointer};
+use ccl_crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Pointer};
 use std::mem;
 use std::ptr;
 use std::sync::atomic::Ordering;

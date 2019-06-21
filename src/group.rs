@@ -1,5 +1,5 @@
 use super::stack::ConcurrentStack;
-use crossbeam_epoch::{self as epoch, Guard};
+use ccl_crossbeam_epoch::{self as epoch, Guard};
 use rand::prelude::*;
 
 /// Aquire a guard. These are needed when accessing a group. Since aquiring a guard has a significant cost,

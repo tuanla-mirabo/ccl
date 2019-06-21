@@ -3,7 +3,7 @@ use crate::util;
 use crate::util::sharedptr_null;
 use crate::util::UniformAllocExt;
 use crate::util::UniformDeallocExt;
-use crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
+use ccl_crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
