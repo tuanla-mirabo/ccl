@@ -32,7 +32,6 @@ default-features = false
 
 [dependencies.crossbeam-utils]
 version = "0.6"
-path = "../crossbeam-utils"
 default-features = false
 
 [dependencies.lazy_static]
