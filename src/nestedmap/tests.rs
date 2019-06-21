@@ -37,6 +37,13 @@ fn len() {
 }
 
 #[test]
+fn is_empty() {
+    let map: NestedMap<i32, i32> = NestedMap::default();
+
+    assert_eq!(map.is_empty(), true);
+}
+
+#[test]
 fn iter_count_fold() {
     let map = NestedMap::default();
 

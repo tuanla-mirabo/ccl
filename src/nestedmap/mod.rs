@@ -107,7 +107,16 @@ pub enum Entry<'a, K: Hash + Eq, V> {
 
 impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
     #[inline]
-    pub fn is_occupied(&mut self) -> Option<&mut OccupiedEntry<'a, K, V>> {
+    pub fn is_occupied(&self) -> bool {
+        if let Entry::Occupied(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    pub fn into_occupied(self) -> Option<OccupiedEntry<'a, K, V>> {
         if let Entry::Occupied(v) = self {
             Some(v)
         } else {
@@ -116,7 +125,16 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
     }
 
     #[inline]
-    pub fn is_vacant(&mut self) -> Option<&mut VacantEntry<'a, K, V>> {
+    pub fn is_vacant(&self) -> bool {
+        if let Entry::Vacant(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    pub fn into_vacant(self) -> Option<VacantEntry<'a, K, V>> {
         if let Entry::Vacant(v) = self {
             Some(v)
         } else {
@@ -236,6 +254,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn len(&self) -> usize {
         let guard = &epoch::pin();
         self.root.len(guard)
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     #[inline]
