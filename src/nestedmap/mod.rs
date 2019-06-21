@@ -281,14 +281,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {
     }
 }
 
-impl<'a, K: 'a + Hash + Eq + fmt::Debug + fmt::Display, V: 'a + fmt::Debug + fmt::Display> fmt::Debug for NestedMap<K, V> {
+impl<'a, K: 'a + Hash + Eq, V: 'a> fmt::Debug for NestedMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let _ = write!(f, "NestedMap {{");
-
-        for r in self.iter() {
-            let _ = write!(f, "\"{}\": \"{}\"", r.key(), r.value());
-        }
-
-        write!(f, "}}")
+        write!(f, "NestedMap {{}}")
     }
 }
