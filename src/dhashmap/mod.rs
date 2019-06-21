@@ -8,7 +8,7 @@ use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-pub mod interface;
+mod interface;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
