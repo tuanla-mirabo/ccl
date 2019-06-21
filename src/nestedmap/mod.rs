@@ -70,6 +70,12 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn remove_with_guard(&self, key: &K, guard: &Guard) {
         self.root.remove(key, guard);
     }
+
+    #[inline]
+    pub fn contains_key(&self, key: &K) -> bool {
+        let guard = epoch::pin();
+        self.root.contains_key(key, guard)
+    }
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {

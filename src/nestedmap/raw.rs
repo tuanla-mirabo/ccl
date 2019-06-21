@@ -177,6 +177,15 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     }
 
     #[inline]
+    pub fn contains_key(&'a self, key: &K, guard: Guard) -> bool {
+        if let Some(_) = self.get(key, guard) {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[inline]
     pub fn insert(&self, entry: Owned<Bucket<K, V>>, guard: &Guard) {
         let key_pos = util::hash_with_nonce(entry.key_ref(), self.nonce) as usize % TABLE_SIZE;
         let bucket = &self.buckets[key_pos];
