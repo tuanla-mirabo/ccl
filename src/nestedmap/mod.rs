@@ -15,6 +15,7 @@ use raw::{Bucket, Entry as RawEntry, Table};
 use std::hash::Hash;
 use std::sync::Arc;
 use std::rc::Rc;
+use std::fmt;
 
 // TO-DO: fix vanishing items when inserting concurrent from multiple threads
 
@@ -277,5 +278,17 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
 impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<'a, K: 'a + Hash + Eq + fmt::Debug + fmt::Display, V: 'a + fmt::Debug + fmt::Display> fmt::Debug for NestedMap<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let _ = write!(f, "NestedMap {{");
+
+        for r in self.iter() {
+            let _ = write!(f, "\"{}\": \"{}\"", r.key(), r.value());
+        }
+
+        write!(f, "}}")
     }
 }
