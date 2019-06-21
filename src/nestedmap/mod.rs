@@ -16,6 +16,8 @@ use std::hash::Hash;
 use std::sync::Arc;
 use std::rc::Rc;
 
+// TO-DO: fix vanishing items when inserting concurrent from multiple threads
+
 pub struct OccupiedEntry<'a, K: Hash + Eq, V> {
     map: &'a NestedMap<K, V>,
     guard: Guard,
