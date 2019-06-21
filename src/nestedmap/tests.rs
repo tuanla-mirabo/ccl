@@ -37,7 +37,7 @@ fn len() {
 }
 
 #[test]
-fn iter_count() {
+fn iter_count_fold() {
     let map = NestedMap::default();
 
     for i in 0..1024_i32 {

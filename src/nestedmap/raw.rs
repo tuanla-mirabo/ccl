@@ -310,42 +310,43 @@ impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.idx == TABLE_SIZE {
-            return None;
-        }
-
+        // Check if we contains a iterator to a subtable.
         if let Some(subiter) = &mut *self.current_subiter {
+            // Fetch element from subiter. If it's Some we return it.
+            // If it isn't we discard the iterator.
             if let Some(v) = subiter.next() {
                 return Some(v);
             } else {
+                // Discard iterator.
                 *self.current_subiter = None;
-                return self.next();
             }
         }
 
-        let bucket_shared: Shared<'a, Bucket<K, V>> =
-            self.table.buckets[self.idx].load(Ordering::Relaxed, unsafe { epoch::unprotected() });
-
-        self.idx += 1;
-
-        if bucket_shared.is_null() {
-            return self.next();
-        }
-
-        let bucket_ref = unsafe { bucket_shared.deref() };
-
-        match bucket_ref {
-            Bucket::Leaf(_, entry) => {
-                Some(TableRef {
-                    guard: Some(epoch::pin()),
-                    ptr: entry,
-                })
+        loop {
+            // We have checked every entry in the table and none is left.
+            if self.idx == TABLE_SIZE {
+                return None;
             }
 
-            Bucket::Branch(_, table) => {
-                *self.current_subiter = Some(table.iter(self.guard.clone()));
-                self.next()
-            },
+            if let Some(bucket_ref) = unsafe { self.table.buckets[self.idx].load(Ordering::Relaxed, epoch::unprotected()).as_ref() } {
+                self.idx += 1;
+
+                match bucket_ref {
+                    Bucket::Leaf(_, entry) => {
+                        return Some(TableRef {
+                            guard: Some(epoch::pin()),
+                            ptr: entry,
+                        });
+                    }
+
+                    Bucket::Branch(_, table) => {
+                        *self.current_subiter = Some(table.iter(self.guard.clone()));
+                        return self.next();
+                    }
+                }
+            } else {
+                self.idx += 1;
+            }
         }
     }
 }
