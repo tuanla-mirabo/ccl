@@ -24,6 +24,7 @@ pub struct OccupiedEntry<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
+    #[inline]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, r: TableRef<'a, K, V>, key: K) -> Self {
         Self {
             map,
@@ -33,18 +34,22 @@ impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
         }
     }
 
+    #[inline]
     pub fn key(&self) -> &K {
         self.r.key()
     }
 
+    #[inline]
     pub fn remove(self) {
         self.map.remove_with_guard(self.r.key(), &self.guard);
     }
 
+    #[inline]
     pub fn get(&self) -> &V {
         self.r.value()
     }
 
+    #[inline]
     pub fn insert(self, value: V) {
         self.map.insert_with_guard(self.key, value, &self.guard);
     }
@@ -57,6 +62,7 @@ pub struct VacantEntry<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
+    #[inline]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, key: K) -> Self {
         Self {
             map,
@@ -65,14 +71,17 @@ impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
         }
     }
 
+    #[inline]
     pub fn insert(self, value: V) {
         self.map.insert_with_guard(self.key, value, &self.guard);
     }
 
+    #[inline]
     pub fn into_key(self) -> K {
         self.key
     }
 
+    #[inline]
     pub fn key(&self) -> &K {
         &self.key
     }
