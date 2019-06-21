@@ -10,10 +10,11 @@ use crate::uniform_allocator::UniformAllocator;
 use crate::util::UniformAllocExt;
 use ccl_crossbeam_epoch::{self as epoch, Guard, Owned};
 use rand::prelude::*;
-pub use raw::TableRef;
+pub use raw::{TableRef, TableIter};
 use raw::{Bucket, Entry, Table};
 use std::hash::Hash;
 use std::sync::Arc;
+use std::rc::Rc;
 
 #[inline]
 pub fn aquire_guard() -> Guard {
@@ -75,6 +76,12 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     pub fn contains_key(&self, key: &K) -> bool {
         let guard = epoch::pin();
         self.root.contains_key(key, guard)
+    }
+
+    #[inline]
+    pub fn iter(&'a self) -> TableIter<'a, K, V> {
+        let guard = Rc::new(epoch::pin());
+        self.root.iter(guard)
     }
 }
 

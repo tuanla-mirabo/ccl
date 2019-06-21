@@ -11,6 +11,7 @@ use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use crate::util::UnsafeOption;
+use std::rc::Rc;
 
 const TABLE_SIZE: usize = 96;
 
@@ -178,11 +179,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
     #[inline]
     pub fn contains_key(&'a self, key: &K, guard: Guard) -> bool {
-        if let Some(_) = self.get(key, guard) {
-            true
-        } else {
-            false
-        }
+        self.get(key, guard).is_some()
     }
 
     #[inline]
@@ -265,6 +262,63 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     }
                 }
             }
+        }
+    }
+
+    #[inline]
+    pub fn iter(&'a self, guard: Rc<Guard>) -> TableIter<'a, K, V> {
+        TableIter {
+            table: self,
+            idx: 0,
+            guard,
+            current_subiter: Box::new(None),
+        }
+    }
+}
+
+pub struct TableIter<'a, K: Hash + Eq, V> {
+    table: &'a Table<K, V>,
+    idx: usize,
+    guard: Rc<Guard>,
+    current_subiter: Box<Option<TableIter<'a, K, V>>>,
+}
+
+impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
+    type Item = TableRef<'a, K, V>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx == TABLE_SIZE {
+            return None;
+        }
+
+        if let Some(subiter) = &mut *self.current_subiter {
+            return subiter.next();
+        }
+
+        let bucket_shared: Shared<'a, Bucket<K, V>> =
+            self.table.buckets[self.idx].load(Ordering::Relaxed, unsafe { epoch::unprotected() });
+
+        self.idx += 1;
+
+        if bucket_shared.is_null() {
+            return None;
+        }
+
+        let bucket_ref = unsafe { bucket_shared.deref() };
+
+        match bucket_ref {
+            Bucket::Leaf(_, entry) => {
+                Some(TableRef {
+                    guard: Some(epoch::pin()),
+                    ptr: entry,
+                })
+            }
+
+            Bucket::Branch(_, table) => {
+                *self.current_subiter = Some(table.iter(self.guard.clone()));
+                self.next()
+            },
         }
     }
 }

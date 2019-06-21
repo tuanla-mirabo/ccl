@@ -85,6 +85,7 @@ impl<T> UnsafeOption<T> for Option<T> {
     }
 
     #[inline]
+    #[allow(clippy::mem_replace_option_with_none)]
     unsafe fn unsafe_take(&mut self) -> Option<T> {
         mem::replace(self, None)
     }

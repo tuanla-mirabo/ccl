@@ -44,6 +44,7 @@ impl<'a, K: Hash + Eq, V> Lock<'a, K, V> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub struct Interface<'a, K: Hash + Eq, V> {
     map: &'a DHashMap<K, V>,
     locks: Box<[Option<RefCell<Lock<'a, K, V>>>]>,
@@ -78,7 +79,7 @@ impl<'a, K: Hash + Eq, V> Interface<'a, K, V> {
     }
 
     fn fetch_lock(&mut self, idx: usize, writable: bool) {
-        if let None = &mut self.locks[idx] {
+        if self.locks[idx].is_none() {
             let l = if writable {
                 Lock::Write(self.map.get_submap(idx).write())
             } else {
