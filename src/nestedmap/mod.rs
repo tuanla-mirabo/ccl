@@ -53,6 +53,11 @@ impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
     pub fn insert(self, value: V) {
         self.map.insert_with_guard(self.key, value, &self.guard);
     }
+
+    #[inline]
+    pub fn into_ref(self) -> TableRef<'a, K, V> {
+        self.r
+    }
 }
 
 pub struct VacantEntry<'a, K: Hash + Eq, V> {
@@ -87,9 +92,76 @@ impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
     }
 }
 
+impl<'a, K: Hash + Eq + Clone, V> VacantEntry<'a, K, V> {
+    #[inline]
+    pub fn insert_with_ret(self, value: V) -> (&'a NestedMap<K, V>, Guard, K) {
+        self.map.insert_with_guard(self.key.clone(), value, &self.guard);
+        (self.map, self.guard, self.key)
+    }
+}
+
 pub enum Entry<'a, K: Hash + Eq, V> {
     Occupied(OccupiedEntry<'a, K, V>),
     Vacant(VacantEntry<'a, K, V>),
+}
+
+impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
+    #[inline]
+    pub fn is_occupied(&mut self) -> Option<&mut OccupiedEntry<'a, K, V>> {
+        if let Entry::Occupied(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn is_vacant(&mut self) -> Option<&mut VacantEntry<'a, K, V>> {
+        if let Entry::Vacant(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn key(&self) -> &K {
+        match self {
+            Entry::Occupied(v) => v.key(),
+            Entry::Vacant(v) => v.key(),
+        }
+    }
+
+    #[inline]
+    pub fn and_inspect<F: FnOnce(&V)>(self, f: F) -> Self {
+        if let Entry::Occupied(occupied) = &self {
+            f(occupied.get());
+        }
+
+        self
+    }
+}
+
+impl<'a, K: Hash + Eq + Clone, V> Entry<'a, K, V>  {
+    pub fn or_insert(self, default: V) -> TableRef<'a, K, V> {
+        match self {
+            Entry::Occupied(occupied) => occupied.into_ref(),
+            Entry::Vacant(vacant) => {
+                let (map, guard, key) = vacant.insert_with_ret(default);
+                map.get_with_guard(&key, guard).expect("this should never happen; nestedmap entry or_insert")
+            }
+        }
+    }
+
+    pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> TableRef<'a, K, V> {
+        match self {
+            Entry::Occupied(occupied) => occupied.into_ref(),
+            Entry::Vacant(vacant) => {
+                let (map, guard, key) = vacant.insert_with_ret(default());
+                map.get_with_guard(&key, guard).expect("this should never happen; nestedmap entry or_insert")
+            }
+        }
+    }
 }
 
 #[inline]
