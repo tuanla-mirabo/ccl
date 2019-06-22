@@ -273,6 +273,15 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
             Some(r) => Entry::Occupied(OccupiedEntry::new(guard, self, r, key)),
         }
     }
+
+    #[inline]
+    pub fn extend<I: IntoIterator<Item = (K, V)>>(&self, iter: I) {
+        let guard = &epoch::pin();
+
+        for pair in iter {
+            self.insert_with_guard(pair.0, pair.1, guard);
+        }
+    }
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Default for NestedMap<K, V> {
