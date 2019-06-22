@@ -1,10 +1,10 @@
 [package]
 name = "ccl_stable_deref_trait"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Robert Grosse <n210241048576@gmail.com>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/storyyeller/stable_deref_trait"
+repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 documentation = "https://docs.rs/stable_deref_trait/1.1.1/stable_deref_trait"
 categories = ["memory-management", "no-std"]
 description = """

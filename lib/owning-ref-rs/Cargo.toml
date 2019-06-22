@@ -1,6 +1,6 @@
 [package]
 name = "ccl_owning_ref"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Marvin Löbel <loebel.marvin@gmail.com>"]
 license = "MIT"
 
@@ -8,7 +8,7 @@ description = "A library for creating references that carry their owner with the
 readme = "README.md"
 documentation = "http://kimundi.github.io/owning-ref-rs/owning_ref/index.html"
 
-repository = "https://github.com/Kimundi/owning-ref-rs"
+repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 keywords = ["reference", "sibling", "field", "owning"]
 
 [dependencies]
