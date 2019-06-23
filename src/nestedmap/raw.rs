@@ -147,6 +147,18 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
+    pub fn layer_pregen(allocator: Arc<UniformAllocator<Bucket<K, V>>>, layers: u8) -> Self {
+        let mut table = Self::empty(allocator.clone());
+        if layers == 0 {
+            return table;
+        }
+        for slot in table.buckets.iter_mut() {
+            let tag: u8 = rand::thread_rng().gen();
+            *slot = Atomic::uniform_alloc(&table.allocator, tag as usize, Bucket::Branch(tag, Table::layer_pregen(allocator.clone(), layers - 1)));
+        }
+        table
+    }
+
     #[inline]
     pub fn get(&'a self, key: &K, guard: Guard) -> Option<TableRef<'a, K, V>> {
         let fake_guard = unsafe { epoch::unprotected() };

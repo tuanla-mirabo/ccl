@@ -201,6 +201,12 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         }
     }
 
+    pub fn new_layer_prefill() -> Self {
+        Self {
+            root: Table::layer_pregen(Arc::new(UniformAllocator::default()), 1),
+        }
+    }
+
     #[inline]
     pub fn insert(&self, key: K, value: V) {
         let guard = &epoch::pin();
