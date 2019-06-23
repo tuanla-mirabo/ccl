@@ -1,5 +1,4 @@
-//! NestedMap is an experimental lockfree map that is not ready for use yet.
-//! No guarantees are made at the moment. Use at your own risk.
+//! See struct level documentation.
 
 mod raw;
 
@@ -190,29 +189,38 @@ pub fn aquire_guard() -> Guard {
     epoch::pin()
 }
 
+/// NestedMap is a threadsafe concurrent hashmap with generally good performance.
+///
+///
+/// The primary difference compared to DHashMap is that NestedMap is lockfree and non-blocking which
+/// makes it more appealing for latency critical things. It also has faster reads that DHashMap.
 pub struct NestedMap<K: Hash + Eq, V> {
     root: Table<K, V>,
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
+    /// Create a new completely empty map.
     pub fn new() -> Self {
         Self {
             root: Table::empty(Arc::new(UniformAllocator::default())),
         }
     }
 
+    /// Create a new map but the root table is prefilled. This may make rapid initial growth more efficient.
     pub fn new_layer_prefill() -> Self {
         Self {
             root: Table::layer_pregen(Arc::new(UniformAllocator::default()), 1),
         }
     }
 
+    /// Insert a value into the map.
     #[inline]
     pub fn insert(&self, key: K, value: V) {
         let guard = &epoch::pin();
         self.insert_with_guard(key, value, guard);
     }
 
+    /// Insert a value into the map with an existing guard, saving on guard creation.
     #[inline]
     pub fn insert_with_guard(&self, key: K, value: V, guard: &Guard) {
         let tag: u8 = rand::thread_rng().gen();
@@ -225,51 +233,60 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         self.root.insert(bucket, guard);
     }
 
+    /// Get a reference to a value in the map.
     #[inline]
     pub fn get(&'a self, key: &K) -> Option<TableRef<'a, K, V>> {
         let guard = epoch::pin();
         self.get_with_guard(key, guard)
     }
 
+    /// Get a value from the map with an existing guard, saving on guard cration.
     #[inline]
     pub fn get_with_guard(&'a self, key: &K, guard: Guard) -> Option<TableRef<'a, K, V>> {
         self.root.get(key, guard)
     }
 
+    /// Remove an item from the map.
     #[inline]
     pub fn remove(&self, key: &K) {
         let guard = &epoch::pin();
         self.remove_with_guard(key, guard);
     }
 
+    /// Remove an item from the map with an existing guard, saving on guard creation.
     #[inline]
     pub fn remove_with_guard(&self, key: &K, guard: &Guard) {
         self.root.remove(key, guard);
     }
 
+    /// Check if the map contains a given key.
     #[inline]
     pub fn contains_key(&self, key: &K) -> bool {
         let guard = epoch::pin();
         self.root.contains_key(key, guard)
     }
 
+    /// Iterate over all items in a map.
     #[inline]
     pub fn iter(&'a self) -> TableIter<'a, K, V> {
         let guard = Rc::new(epoch::pin());
         self.root.iter(guard)
     }
 
+    /// Get the amount of elements in the map.
     #[inline]
     pub fn len(&self) -> usize {
         let guard = &epoch::pin();
         self.root.len(guard)
     }
 
+    /// Check if the map is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Get an entry from the map.
     #[inline]
     pub fn entry(&'a self, key: K) -> Entry<'a, K, V> {
         let guard = epoch::pin();
@@ -280,6 +297,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
         }
     }
 
+    /// Extend the map with an iterator.
     #[inline]
     pub fn extend<I: IntoIterator<Item = (K, V)>>(&self, iter: I) {
         let guard = &epoch::pin();
