@@ -3,15 +3,15 @@ use crate::util;
 use crate::util::sharedptr_null;
 use crate::util::UniformAllocExt;
 use crate::util::UniformDeallocExt;
+use crate::util::UnsafeOption;
 use ccl_crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
 use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use crate::util::UnsafeOption;
-use std::rc::Rc;
 
 const TABLE_SIZE: usize = 96;
 
@@ -154,7 +154,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
         for slot in table.buckets.iter_mut() {
             let tag: u8 = rand::thread_rng().gen();
-            *slot = Atomic::uniform_alloc(&table.allocator, tag as usize, Bucket::Branch(tag, Table::layer_pregen(allocator.clone(), layers - 1)));
+            *slot = Atomic::uniform_alloc(
+                &table.allocator,
+                tag as usize,
+                Bucket::Branch(tag, Table::layer_pregen(allocator.clone(), layers - 1)),
+            );
         }
         table
     }
@@ -340,7 +344,11 @@ impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
                 return None;
             }
 
-            if let Some(bucket_ref) = unsafe { self.table.buckets[self.idx].load(Ordering::Relaxed, epoch::unprotected()).as_ref() } {
+            if let Some(bucket_ref) = unsafe {
+                self.table.buckets[self.idx]
+                    .load(Ordering::Relaxed, epoch::unprotected())
+                    .as_ref()
+            } {
                 self.idx += 1;
 
                 match bucket_ref {

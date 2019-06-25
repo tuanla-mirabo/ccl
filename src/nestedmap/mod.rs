@@ -9,12 +9,12 @@ use crate::uniform_allocator::UniformAllocator;
 use crate::util::UniformAllocExt;
 use ccl_crossbeam_epoch::{self as epoch, Guard, Owned};
 use rand::prelude::*;
-pub use raw::{TableRef, TableIter};
 use raw::{Bucket, Entry as RawEntry, Table};
-use std::hash::Hash;
-use std::sync::Arc;
-use std::rc::Rc;
+pub use raw::{TableIter, TableRef};
 use std::fmt;
+use std::hash::Hash;
+use std::rc::Rc;
+use std::sync::Arc;
 
 // TO-DO: fix vanishing items when inserting concurrent from multiple threads
 
@@ -28,12 +28,7 @@ pub struct OccupiedEntry<'a, K: Hash + Eq, V> {
 impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
     #[inline]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, r: TableRef<'a, K, V>, key: K) -> Self {
-        Self {
-            map,
-            guard,
-            r,
-            key,
-        }
+        Self { map, guard, r, key }
     }
 
     #[inline]
@@ -71,11 +66,7 @@ pub struct VacantEntry<'a, K: Hash + Eq, V> {
 impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
     #[inline]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, key: K) -> Self {
-        Self {
-            map,
-            guard,
-            key,
-        }
+        Self { map, guard, key }
     }
 
     #[inline]
@@ -97,7 +88,8 @@ impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
 impl<'a, K: Hash + Eq + Clone, V> VacantEntry<'a, K, V> {
     #[inline]
     pub fn insert_with_ret(self, value: V) -> (&'a NestedMap<K, V>, Guard, K) {
-        self.map.insert_with_guard(self.key.clone(), value, &self.guard);
+        self.map
+            .insert_with_guard(self.key.clone(), value, &self.guard);
         (self.map, self.guard, self.key)
     }
 }
@@ -162,13 +154,14 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
     }
 }
 
-impl<'a, K: Hash + Eq + Clone, V> Entry<'a, K, V>  {
+impl<'a, K: Hash + Eq + Clone, V> Entry<'a, K, V> {
     pub fn or_insert(self, default: V) -> TableRef<'a, K, V> {
         match self {
             Entry::Occupied(occupied) => occupied.into_ref(),
             Entry::Vacant(vacant) => {
                 let (map, guard, key) = vacant.insert_with_ret(default);
-                map.get_with_guard(&key, guard).expect("this should never happen; nestedmap entry or_insert")
+                map.get_with_guard(&key, guard)
+                    .expect("this should never happen; nestedmap entry or_insert")
             }
         }
     }
@@ -178,7 +171,8 @@ impl<'a, K: Hash + Eq + Clone, V> Entry<'a, K, V>  {
             Entry::Occupied(occupied) => occupied.into_ref(),
             Entry::Vacant(vacant) => {
                 let (map, guard, key) = vacant.insert_with_ret(default());
-                map.get_with_guard(&key, guard).expect("this should never happen; nestedmap entry or_insert")
+                map.get_with_guard(&key, guard)
+                    .expect("this should never happen; nestedmap entry or_insert")
             }
         }
     }

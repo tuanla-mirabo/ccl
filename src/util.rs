@@ -1,9 +1,9 @@
 use crate::uniform_allocator::UniformAllocator;
 use ccl_crossbeam_epoch::{self as epoch, Atomic, Owned, Pointer, Shared};
 use std::hash::{Hash, Hasher};
+use std::mem;
 use std::ptr;
 use std::sync::atomic::Ordering;
-use std::mem;
 
 pub trait UniformAllocExt<T> {
     fn uniform_alloc(allocator: &UniformAllocator<T>, tag: usize, v: T) -> Self;

@@ -1,9 +1,9 @@
 use super::*;
-use std::hash::Hash;
-use hashbrown::HashMap;
-use std::cell::{RefCell, Ref};
-use std::ops::Deref;
 use ccl_owning_ref::OwningRef;
+use hashbrown::HashMap;
+use std::cell::{Ref, RefCell};
+use std::hash::Hash;
+use std::ops::Deref;
 
 pub enum InterfaceError {
     LockHeld,
@@ -52,12 +52,12 @@ pub struct Interface<'a, K: Hash + Eq, V> {
 
 impl<'a, K: Hash + Eq, V> Interface<'a, K, V> {
     pub(crate) fn new(map: &'a DHashMap<K, V>) -> Self {
-        let locks = (0..map.chunks_count()).map(|_| None).collect::<Vec<_>>().into_boxed_slice();
+        let locks = (0..map.chunks_count())
+            .map(|_| None)
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
-        Self {
-            map,
-            locks,
-        }
+        Self { map, locks }
     }
 
     pub fn get(&'a mut self, key: &K) -> InterfaceResult<DHashMapInterfaceRef<'a, K, V>> {

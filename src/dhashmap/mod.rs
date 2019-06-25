@@ -89,7 +89,8 @@ where
     /// Get or insert an element into the map if one does not exist.
     #[inline]
     pub fn get_or_insert(&'a self, key: &K, default: V) -> DHashMapRefAny<'a, K, V>
-        where K: Clone 
+    where
+        K: Clone,
     {
         let mapi = self.determine_map(key);
         {
@@ -97,9 +98,9 @@ where
             if submap.contains_key(key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                return DHashMapRefAny::Shared(DHashMapRef { ptr: or })
+                return DHashMapRefAny::Shared(DHashMapRef { ptr: or });
             }
-        } 
+        }
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         if !submap.contains_key(key) {
             submap.insert(key.clone(), default);
@@ -111,8 +112,13 @@ where
 
     /// Get or insert an element into the map if one does not exist.
     #[inline]
-    pub fn get_or_insert_with<F: FnOnce() -> V>(&'a self, key: &K, default: F) -> DHashMapRefAny<'a, K, V>
-        where K: Clone 
+    pub fn get_or_insert_with<F: FnOnce() -> V>(
+        &'a self,
+        key: &K,
+        default: F,
+    ) -> DHashMapRefAny<'a, K, V>
+    where
+        K: Clone,
     {
         let mapi = self.determine_map(key);
         {
@@ -120,7 +126,7 @@ where
             if submap.contains_key(key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                return DHashMapRefAny::Shared(DHashMapRef { ptr: or })
+                return DHashMapRefAny::Shared(DHashMapRef { ptr: or });
             }
         }
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -547,7 +553,7 @@ where
 }
 
 /// A unique reference into a DHashMap.
-pub enum DHashMapRefAny<'a, K, V> 
+pub enum DHashMapRefAny<'a, K, V>
 where
     K: Hash + Eq,
 {
