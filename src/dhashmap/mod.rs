@@ -86,6 +86,52 @@ where
         submap.insert(key, value);
     }
 
+    /// Get or insert an element into the map if one does not exist.
+    #[inline]
+    pub fn get_or_insert(&'a self, key: &K, default: V) -> DHashMapRefAny<'a, K, V>
+        where K: Clone 
+    {
+        let mapi = self.determine_map(key);
+        {
+            let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
+            if submap.contains_key(key) {
+                let or = OwningRef::new(submap);
+                let or = or.map(|v| v.get(key).unwrap());
+                return DHashMapRefAny::Shared(DHashMapRef { ptr: or })
+            }
+        } 
+        let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
+        if !submap.contains_key(key) {
+            submap.insert(key.clone(), default);
+        }
+        let or = OwningRefMut::new(submap);
+        let or = or.map_mut(|v| v.get_mut(key).unwrap());
+        DHashMapRefAny::Unique(DHashMapRefMut { ptr: or })
+    }
+
+    /// Get or insert an element into the map if one does not exist.
+    #[inline]
+    pub fn get_or_insert_with<F: FnOnce() -> V>(&'a self, key: &K, default: F) -> DHashMapRefAny<'a, K, V>
+        where K: Clone 
+    {
+        let mapi = self.determine_map(key);
+        {
+            let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
+            if submap.contains_key(key) {
+                let or = OwningRef::new(submap);
+                let or = or.map(|v| v.get(key).unwrap());
+                return DHashMapRefAny::Shared(DHashMapRef { ptr: or })
+            }
+        }
+        let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
+        if !submap.contains_key(key) {
+            submap.insert(key.clone(), default());
+        }
+        let or = OwningRefMut::new(submap);
+        let or = or.map_mut(|v| v.get_mut(key).unwrap());
+        DHashMapRefAny::Unique(DHashMapRefMut { ptr: or })
+    }
+
     /// Check if the map contains the specified key.
     #[inline]
     pub fn contains_key(&self, key: &K) -> bool {
@@ -497,6 +543,30 @@ where
     #[inline]
     fn deref_mut(&mut self) -> &mut V {
         &mut *self.ptr
+    }
+}
+
+/// A unique reference into a DHashMap.
+pub enum DHashMapRefAny<'a, K, V> 
+where
+    K: Hash + Eq,
+{
+    Shared(DHashMapRef<'a, K, V>),
+    Unique(DHashMapRefMut<'a, K, V>),
+}
+
+impl<'a, K, V> Deref for DHashMapRefAny<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Target = V;
+
+    #[inline]
+    fn deref(&self) -> &V {
+        match self {
+            DHashMapRefAny::Shared(r) => &*r,
+            DHashMapRefAny::Unique(r) => &*r,
+        }
     }
 }
 
