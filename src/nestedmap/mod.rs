@@ -178,7 +178,7 @@ impl<'a, K: Hash + Eq + Clone, V> Entry<'a, K, V> {
     }
 }
 
-#[inline]
+#[inline(always)]
 pub fn aquire_guard() -> Guard {
     epoch::pin()
 }

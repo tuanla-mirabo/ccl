@@ -11,7 +11,7 @@ use std::sync::atomic::Ordering;
 ///
 /// Please note that no memory consumed by objects removed after the guard was aquired can be reclaimed
 /// until the guard has been dropped.
-#[inline]
+#[inline(always)]
 pub fn aquire_guard() -> Guard {
     epoch::pin()
 }
