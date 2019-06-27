@@ -57,3 +57,18 @@ fn iter_count_fold() {
 
     assert_eq!(map.iter().count(), 1024);
 }
+
+#[test]
+fn intoiter() {
+    let map = NestedMap::new_layer_prefill();
+
+    for i in 0..1024_i32 {
+        map.insert(i, i);
+    }
+
+    for r in &map {
+        assert!(*r >= 0 && *r < 1024);
+    }
+
+    assert_eq!(map.iter().count(), 1024);
+}
