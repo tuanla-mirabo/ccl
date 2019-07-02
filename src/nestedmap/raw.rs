@@ -208,7 +208,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         match bucket.compare_and_set(
             sharedptr_null(),
             unsafe { entry.unsafe_take().unsafe_unwrap() },
-            Ordering::Release,
+            Ordering::Relaxed,
             guard,
         ) {
             Ok(_) => {}
