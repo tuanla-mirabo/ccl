@@ -18,11 +18,11 @@ nightly = ["parking_lot/nightly", "hashbrown/nightly", "ccl-crossbeam-epoch/nigh
 [dependencies]
 hashbrown = "0.5.0"
 parking_lot = "0.8.0"
-rand = "0.6.5"
+rand = "0.7.0"
 num_cpus = "1.10.1"
 ccl-crossbeam-epoch = { path = "lib/ccl-crossbeam-epoch", version = "0.7.1" }
 seahash = "3.0.6"
-ccl_owning_ref = "0.4.0"
+ccl_owning_ref = "0.4.1"
 
 [dev-dependencies]
 rayon = "1.1.0"
