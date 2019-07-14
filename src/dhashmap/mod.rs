@@ -284,7 +284,7 @@ where
     }
 
     #[inline]
-    pub fn interface(&'a self) -> interface::Interface<'a, K, V> {
+    pub(crate) fn interface(&'a self) -> interface::Interface<'a, K, V> {
         interface::Interface::new(self)
     }
 
