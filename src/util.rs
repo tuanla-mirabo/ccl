@@ -90,3 +90,8 @@ impl<T> UnsafeOption<T> for Option<T> {
         mem::replace(self, None)
     }
 }
+
+#[inline]
+pub fn ptr_size() -> usize {
+    mem::size_of::<&*const u32>()
+}

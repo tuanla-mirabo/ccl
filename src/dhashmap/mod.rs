@@ -1,5 +1,6 @@
 //! Please see the struct level documentation.
 
+use crate::util;
 use ccl_owning_ref::{OwningRef, OwningRefMut};
 use hashbrown::HashMap;
 use parking_lot::RwLock;
@@ -7,8 +8,6 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-
-mod interface;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -284,30 +283,20 @@ where
     }
 
     #[inline]
-    pub(crate) fn interface(&'a self) -> interface::Interface<'a, K, V> {
-        interface::Interface::new(self)
-    }
-
-    #[inline]
     pub(crate) fn determine_map(&self, key: &K) -> usize {
         let mut hash_state = seahash::SeaHasher::new();
         hash_state.write_u64(self.hash_nonce);
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
-        let shift = 64 - self.ncb;
+        let shift = util::ptr_size() - self.ncb;
 
         (hash >> shift) as usize
     }
 
     #[inline]
-    pub(crate) fn chunks_count(&self) -> usize {
+    pub fn chunks_count(&self) -> usize {
         self.submaps.len()
-    }
-
-    #[inline]
-    pub(crate) fn get_submap(&self, idx: usize) -> &RwLock<HashMap<K, V>> {
-        &self.submaps[idx]
     }
 }
 
