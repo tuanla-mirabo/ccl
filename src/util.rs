@@ -92,6 +92,6 @@ impl<T> UnsafeOption<T> for Option<T> {
 }
 
 #[inline]
-pub fn ptr_size() -> usize {
-    mem::size_of::<usize>()
+pub fn ptr_size_bits() -> usize {
+    mem::size_of::<usize>() * 8
 }

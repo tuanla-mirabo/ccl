@@ -289,7 +289,7 @@ where
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
-        let shift = util::ptr_size() - self.ncb;
+        let shift = util::ptr_size_bits() - self.ncb;
 
         (hash >> shift) as usize
     }
