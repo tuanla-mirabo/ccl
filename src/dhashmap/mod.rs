@@ -8,6 +8,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::borrow::Borrow;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -87,10 +88,12 @@ where
 
     /// Get or insert an element into the map if one does not exist.
     #[inline]
-    pub fn get_or_insert(&'a self, key: &K, default: V) -> DHashMapRefAny<'a, K, V>
+    pub fn get_or_insert<Q: Borrow<K>>(&'a self, key: Q, default: V) -> DHashMapRefAny<'a, K, V>
     where
         K: Clone,
     {
+        let key = key.borrow();
+
         let mapi = self.determine_map(key);
         {
             let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -111,14 +114,16 @@ where
 
     /// Get or insert an element into the map if one does not exist.
     #[inline]
-    pub fn get_or_insert_with<F: FnOnce() -> V>(
+    pub fn get_or_insert_with<Q: Borrow<K>, F: FnOnce() -> V>(
         &'a self,
-        key: &K,
+        key: Q,
         default: F,
     ) -> DHashMapRefAny<'a, K, V>
     where
         K: Clone,
     {
+        let key = key.borrow();
+
         let mapi = self.determine_map(key);
         {
             let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -139,7 +144,8 @@ where
 
     /// Check if the map contains the specified key.
     #[inline]
-    pub fn contains_key(&self, key: &K) -> bool {
+    pub fn contains_key<Q: Borrow<K>>(&self, key: Q) -> bool {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         submap.contains_key(&key)
@@ -147,7 +153,8 @@ where
 
     /// Get a shared reference to an element contained within the map.
     #[inline]
-    pub fn get(&'a self, key: &K) -> Option<DHashMapRef<'a, K, V>> {
+    pub fn get<Q: Borrow<K>>(&'a self, key: Q) -> Option<DHashMapRef<'a, K, V>> {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
         if submap.contains_key(&key) {
@@ -161,7 +168,8 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get(&'a self, key: &K) -> TryGetResult<DHashMapRef<'a, K, V>> {
+    pub fn try_get<Q: Borrow<K>>(&'a self, key: Q) -> TryGetResult<DHashMapRef<'a, K, V>> {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read() } {
             if submap.contains_key(&key) {
@@ -178,13 +186,15 @@ where
 
     /// Shortcut for a get followed by an unwrap.
     #[inline]
-    pub fn index(&'a self, key: &K) -> DHashMapRef<'a, K, V> {
+    pub fn index<Q: Borrow<K>>(&'a self, key: Q) -> DHashMapRef<'a, K, V> {
+        let key = key.borrow();
         self.get(key).unwrap()
     }
 
     /// Get a unique reference to an element contained within the map.
     #[inline]
-    pub fn get_mut(&'a self, key: &K) -> Option<DHashMapRefMut<'a, K, V>> {
+    pub fn get_mut<Q: Borrow<K>>(&'a self, key: Q) -> Option<DHashMapRefMut<'a, K, V>> {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         if submap.contains_key(&key) {
@@ -198,7 +208,8 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get_mut(&'a self, key: &K) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
+    pub fn try_get_mut<Q: Borrow<K>>(&'a self, key: Q) -> TryGetResult<DHashMapRefMut<'a, K, V>> {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write() } {
             if submap.contains_key(&key) {
@@ -215,7 +226,8 @@ where
 
     /// Shortcut for a get_mut followed by an unwrap.
     #[inline]
-    pub fn index_mut(&'a self, key: &K) -> DHashMapRefMut<'a, K, V> {
+    pub fn index_mut<Q: Borrow<K>>(&'a self, key: Q) -> DHashMapRefMut<'a, K, V> {
+        let key = key.borrow();
         self.get_mut(key).unwrap()
     }
 
@@ -233,7 +245,8 @@ where
 
     /// Remove an element from the map if it exists. Will return the K, V pair.
     #[inline]
-    pub fn remove(&self, key: &K) -> Option<(K, V)> {
+    pub fn remove<Q: Borrow<K>>(&self, key: Q) -> Option<(K, V)> {
+        let key = key.borrow();
         let mapi = self.determine_map(&key);
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
         submap.remove_entry(key)
