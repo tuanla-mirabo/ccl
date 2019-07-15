@@ -4,11 +4,11 @@ use crate::util;
 use ccl_owning_ref::{OwningRef, OwningRefMut};
 use hashbrown::HashMap;
 use parking_lot::RwLock;
+use std::borrow::Borrow;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use std::borrow::Borrow;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///

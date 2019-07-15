@@ -1,6 +1,6 @@
 [package]
 name = "ccl"
-version = "4.9.2"
+version = "4.10.0"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
