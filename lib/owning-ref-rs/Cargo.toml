@@ -1,6 +1,6 @@
 [package]
 name = "ccl_owning_ref"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Marvin Löbel <loebel.marvin@gmail.com>"]
 license = "MIT"
 
@@ -12,4 +12,4 @@ repository = "https://gitlab.nebulanet.cc/xacrimon/ccl"
 keywords = ["reference", "sibling", "field", "owning"]
 
 [dependencies]
-ccl_stable_deref_trait = "1.0.0"
+ccl_stable_deref_trait = "1.0.2"
