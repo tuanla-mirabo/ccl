@@ -1,6 +1,6 @@
 [package]
 name = "ccl_stable_deref_trait"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Robert Grosse <n210241048576@gmail.com>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
@@ -17,4 +17,4 @@ std = []
 alloc = []
 
 [dependencies]
-parking_lot = "0.8.0"
+parking_lot = "0.9.0"
