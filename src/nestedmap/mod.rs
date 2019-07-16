@@ -196,11 +196,13 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     /// Create a new completely empty map.
     pub fn new() -> Self {
         Self {
-            root: Table::empty(Arc::new(UniformAllocator::default())),
+            root: Table::layer_pregen(Arc::new(UniformAllocator::default()), 1),
         }
     }
 
     /// Create a new map but the root table is prefilled. This may make rapid initial growth more efficient.
+    /// Now does the same as Self::new().
+    #[deprecated]
     pub fn new_layer_prefill() -> Self {
         Self {
             root: Table::layer_pregen(Arc::new(UniformAllocator::default()), 1),
