@@ -65,7 +65,7 @@ pub fn hash_with_nonce<T: Hash>(v: &T, nonce: u8) -> u64 {
     hasher.finish()
 }
 
-#[inline]
+#[inline(always)]
 pub fn sharedptr_null<'a, T>() -> Shared<'a, T> {
     unsafe { Shared::from_usize(0) }
 }
