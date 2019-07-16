@@ -26,32 +26,32 @@ pub struct OccupiedEntry<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> OccupiedEntry<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, r: TableRef<'a, K, V>, key: K) -> Self {
         Self { map, guard, r, key }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn key(&self) -> &K {
         self.r.key()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn remove(self) {
         self.map.remove_with_guard(self.r.key(), &self.guard);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get(&self) -> &V {
         self.r.value()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn insert(self, value: V) {
         self.map.insert_with_guard(self.key, value, &self.guard);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn into_ref(self) -> TableRef<'a, K, V> {
         self.r
     }
@@ -64,29 +64,29 @@ pub struct VacantEntry<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> VacantEntry<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn new(guard: Guard, map: &'a NestedMap<K, V>, key: K) -> Self {
         Self { map, guard, key }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn insert(self, value: V) {
         self.map.insert_with_guard(self.key, value, &self.guard);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn into_key(self) -> K {
         self.key
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn key(&self) -> &K {
         &self.key
     }
 }
 
 impl<'a, K: Hash + Eq + Clone, V> VacantEntry<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn insert_with_ret(self, value: V) -> (&'a NestedMap<K, V>, Guard, K) {
         self.map
             .insert_with_guard(self.key.clone(), value, &self.guard);
@@ -100,7 +100,7 @@ pub enum Entry<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn is_occupied(&self) -> bool {
         if let Entry::Occupied(_) = self {
             true
@@ -109,7 +109,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn into_occupied(self) -> Option<OccupiedEntry<'a, K, V>> {
         if let Entry::Occupied(v) = self {
             Some(v)
@@ -118,7 +118,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_vacant(&self) -> bool {
         if let Entry::Vacant(_) = self {
             true
@@ -127,7 +127,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn into_vacant(self) -> Option<VacantEntry<'a, K, V>> {
         if let Entry::Vacant(v) = self {
             Some(v)
@@ -136,7 +136,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn key(&self) -> &K {
         match self {
             Entry::Occupied(v) => v.key(),
@@ -144,7 +144,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn and_inspect<F: FnOnce(&V)>(self, f: F) -> Self {
         if let Entry::Occupied(occupied) = &self {
             f(occupied.get());
@@ -210,14 +210,14 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     }
 
     /// Insert a value into the map.
-    #[inline]
+    #[inline(always)]
     pub fn insert(&self, key: K, value: V) {
         let guard = &epoch::pin();
         self.insert_with_guard(key, value, guard);
     }
 
     /// Insert a value into the map with an existing guard, saving on guard creation.
-    #[inline]
+    #[inline(always)]
     pub fn insert_with_guard(&self, key: K, value: V, guard: &Guard) {
         let tag: u8 = rand::thread_rng().gen();
 
@@ -230,54 +230,54 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> NestedMap<K, V> {
     }
 
     /// Get a reference to a value in the map.
-    #[inline]
+    #[inline(always)]
     pub fn get(&'a self, key: &K) -> Option<TableRef<'a, K, V>> {
         let guard = epoch::pin();
         self.get_with_guard(key, guard)
     }
 
     /// Get a value from the map with an existing guard, saving on guard cration.
-    #[inline]
+    #[inline(always)]
     pub fn get_with_guard(&'a self, key: &K, guard: Guard) -> Option<TableRef<'a, K, V>> {
         self.root.get(key, guard)
     }
 
     /// Remove an item from the map.
-    #[inline]
+    #[inline(always)]
     pub fn remove(&self, key: &K) {
         let guard = &epoch::pin();
         self.remove_with_guard(key, guard);
     }
 
     /// Remove an item from the map with an existing guard, saving on guard creation.
-    #[inline]
+    #[inline(always)]
     pub fn remove_with_guard(&self, key: &K, guard: &Guard) {
         self.root.remove(key, guard);
     }
 
     /// Check if the map contains a given key.
-    #[inline]
+    #[inline(always)]
     pub fn contains_key(&self, key: &K) -> bool {
         let guard = epoch::pin();
         self.root.contains_key(key, guard)
     }
 
     /// Iterate over all items in a map.
-    #[inline]
+    #[inline(always)]
     pub fn iter(&'a self) -> TableIter<'a, K, V> {
         let guard = Rc::new(epoch::pin());
         self.root.iter(guard)
     }
 
     /// Get the amount of elements in the map.
-    #[inline]
+    #[inline(always)]
     pub fn len(&self) -> usize {
         let guard = &epoch::pin();
         self.root.len(guard)
     }
 
     /// Check if the map is empty.
-    #[inline]
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
