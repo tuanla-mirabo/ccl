@@ -13,6 +13,8 @@ use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+// TO-DO: fix vanishing items when inserting concurrent from multiple threads
+
 const TABLE_SIZE: usize = 96;
 
 pub struct Entry<K: Hash + Eq, V> {
