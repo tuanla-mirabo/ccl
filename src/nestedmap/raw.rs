@@ -247,6 +247,12 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                                 ),
                             );
                             bucket.store(new_table, Ordering::Release);
+                            match bucket.compare_and_set(actual, new_table, Ordering::Release, guard) {
+                                Ok(_) => {}
+                                Err(_) => {
+                                    self.insert(entry, guard)
+                                }
+                            }
                         }
                     }
                 }
