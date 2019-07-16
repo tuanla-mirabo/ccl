@@ -38,14 +38,14 @@ fn len() {
 
 #[test]
 fn is_empty() {
-    let map: NestedMap<i32, i32> = NestedMap::new_layer_prefill();
+    let map: NestedMap<i32, i32> = NestedMap::default();
 
     assert_eq!(map.is_empty(), true);
 }
 
 #[test]
 fn iter_count_fold() {
-    let map = NestedMap::new_layer_prefill();
+    let map = NestedMap::default();
 
     for i in 0..1024_i32 {
         map.insert(i, i);
@@ -60,7 +60,7 @@ fn iter_count_fold() {
 
 #[test]
 fn intoiter() {
-    let map = NestedMap::new_layer_prefill();
+    let map = NestedMap::default();
 
     for i in 0..1024_i32 {
         map.insert(i, i);

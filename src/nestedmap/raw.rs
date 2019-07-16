@@ -4,7 +4,7 @@ use crate::util::sharedptr_null;
 use crate::util::UniformAllocExt;
 use crate::util::UniformDeallocExt;
 use crate::util::UnsafeOption;
-use ccl_crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Shared};
+use ccl_crossbeam_epoch::{self as epoch, Atomic, Guard, Owned, Pointer, Shared};
 use rand::prelude::*;
 use std::hash::Hash;
 use std::mem;
@@ -12,8 +12,6 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-
-// TO-DO: fix vanishing items when inserting concurrent from multiple threads
 
 const TABLE_SIZE: usize = 96;
 
@@ -233,6 +231,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                             }
                         } else {
                             let tag: u8 = rand::thread_rng().gen();
+                            let uz = unsafe { mem::transmute_copy::<Owned<_>, usize>(&entry) };
 
                             let new_table = Owned::uniform_alloc(
                                 &self.allocator,
@@ -246,12 +245,11 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                                     ),
                                 ),
                             );
-                            bucket.store(new_table, Ordering::Release);
-                            match bucket.compare_and_set(actual, new_table, Ordering::Release, guard) {
+                            //bucket.store(new_table, Ordering::Release);
+                            match bucket.compare_and_set(actual, new_table, Ordering::SeqCst, guard)
+                            {
                                 Ok(_) => {}
-                                Err(_) => {
-                                    self.insert(entry, guard)
-                                }
+                                Err(_) => self.insert(unsafe { Owned::from_usize(uz) }, guard),
                             }
                         }
                     }
