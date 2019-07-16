@@ -11,19 +11,18 @@ pub struct UniformAllocator<T> {
 }
 
 impl<T> UniformAllocator<T> {
-    #[inline]
     pub fn new() -> Self {
         Self {
             marker: PhantomData,
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn alloc(&self, _tag: usize) -> *mut u8 {
         unsafe { alloc(Layout::new::<T>()) }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn dealloc(&self, _tag: usize, ptr: *mut u8) -> Option<T> {
         unsafe {
             let data = ptr::read(ptr as *const _);
