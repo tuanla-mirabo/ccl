@@ -91,7 +91,7 @@ impl<T> UnsafeOption<T> for Option<T> {
     }
 }
 
-#[inline]
+#[inline(always)]
 pub const fn ptr_size_bits() -> usize {
     mem::size_of::<usize>() * 8
 }
