@@ -26,7 +26,7 @@ pub enum Bucket<K: Hash + Eq, V> {
 }
 
 impl<K: Hash + Eq, V> Bucket<K, V> {
-    #[inline]
+    #[inline(always)]
     fn key_ref(&self) -> &K {
         if let Bucket::Leaf(_, entry) = self {
             &entry.key
@@ -35,7 +35,7 @@ impl<K: Hash + Eq, V> Bucket<K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn tag(&self) -> u8 {
         match self {
             Bucket::Leaf(tag, _) => *tag,
@@ -56,7 +56,7 @@ pub struct TableRef<'a, K: Hash + Eq, V> {
 }
 
 impl<'a, K: Hash + Eq, V> Drop for TableRef<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     fn drop(&mut self) {
         let guard = self.guard.take();
         mem::drop(guard);
@@ -64,12 +64,12 @@ impl<'a, K: Hash + Eq, V> Drop for TableRef<'a, K, V> {
 }
 
 impl<'a, K: Hash + Eq, V> TableRef<'a, K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn key(&self) -> &K {
         &self.ptr.key
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn value(&self) -> &V {
         &self.ptr.value
     }
@@ -78,14 +78,13 @@ impl<'a, K: Hash + Eq, V> TableRef<'a, K, V> {
 impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
     type Target = V;
 
-    #[inline]
+    #[inline(always)]
     fn deref(&self) -> &V {
         &self.value()
     }
 }
 
 impl<K: Hash + Eq, V> Drop for Table<K, V> {
-    #[inline]
     fn drop(&mut self) {
         self.buckets.iter().for_each(|ptr| {
             let ptr = unsafe { ptr.load(Ordering::Relaxed, epoch::unprotected()) };
@@ -99,7 +98,7 @@ impl<K: Hash + Eq, V> Drop for Table<K, V> {
 }
 
 impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
-    #[inline]
+    #[inline(always)]
     pub fn allocator(&self) -> &UniformAllocator<Bucket<K, V>> {
         &self.allocator
     }
@@ -193,7 +192,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn contains_key(&'a self, key: &K, guard: Guard) -> bool {
         self.get(key, guard).is_some()
     }
