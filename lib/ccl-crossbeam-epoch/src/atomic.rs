@@ -780,16 +780,6 @@ impl<T> Owned<T> {
     }
 }
 
-impl<T> Drop for Owned<T> {
-    #[inline]
-    fn drop(&mut self) {
-        let (raw, _) = decompose_data::<T>(self.data);
-        unsafe {
-            drop(Box::from_raw(raw));
-        }
-    }
-}
-
 impl<T> fmt::Debug for Owned<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (raw, tag) = decompose_data::<T>(self.data);
