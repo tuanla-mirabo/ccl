@@ -16,12 +16,11 @@ fn insert_then_assert_st() {
 
 #[test]
 fn insert_rayon() {
+    const INSV: u64 = 518;
     let map = NestedMap::default();
 
-    let iter_c: i32 = 1024;
-
-    (0..iter_c).into_par_iter().for_each(|i| {
-        map.insert(i, i * 7);
+    (0..100000).into_par_iter().for_each(|i| {
+        map.insert(i, INSV);
     });
 }
 
