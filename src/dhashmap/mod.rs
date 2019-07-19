@@ -90,7 +90,7 @@ where
     #[inline]
     pub fn get_or_insert<Q>(&'a self, key: &K, default: V) -> DHashMapRefAny<'a, K, V>
     where
-        K: Clone
+        K: Clone,
     {
         let key = key.borrow();
 
@@ -145,7 +145,7 @@ where
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -157,7 +157,7 @@ where
     pub fn get<Q>(&'a self, key: &Q) -> Option<DHashMapRef<'a, K, V>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).read() };
@@ -175,7 +175,7 @@ where
     pub fn try_get<Q>(&'a self, key: &Q) -> TryGetResult<DHashMapRef<'a, K, V>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read() } {
@@ -196,7 +196,7 @@ where
     pub fn index<Q>(&'a self, key: &Q) -> DHashMapRef<'a, K, V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         self.get(key).unwrap()
     }
@@ -206,7 +206,7 @@ where
     pub fn get_mut<Q>(&'a self, key: &Q) -> Option<DHashMapRefMut<'a, K, V>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(&key);
         let submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -224,7 +224,7 @@ where
     pub fn try_get_mut<Q>(&'a self, key: &Q) -> TryGetResult<DHashMapRefMut<'a, K, V>>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(&key);
         if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write() } {
@@ -245,7 +245,7 @@ where
     pub fn index_mut<Q>(&'a self, key: &Q) -> DHashMapRefMut<'a, K, V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         self.get_mut(key).unwrap()
     }
@@ -267,7 +267,7 @@ where
     pub fn remove<Q>(&self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mapi = self.determine_map(&key);
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -321,7 +321,7 @@ where
     pub(crate) fn determine_map<Q>(&self, key: &Q) -> usize
     where
         K: Borrow<Q>,
-        Q: Hash + Eq + ?Sized
+        Q: Hash + Eq + ?Sized,
     {
         let mut hash_state = seahash::SeaHasher::new();
         hash_state.write_u64(self.hash_nonce);
