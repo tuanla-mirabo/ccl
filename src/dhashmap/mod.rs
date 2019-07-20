@@ -657,8 +657,13 @@ where
 
 /// A error possibly returned by the try_get family of methods for DHashMap.
 pub enum TryGetError {
+    /// Returned if the key did not exist in the map.
     InvalidKey,
+
+    /// Returned if the operation was going to block.
     WouldBlock,
+
+    /// Returned if the lock did not become available within the specified timeout.
     DidNotResolve,
 }
 
