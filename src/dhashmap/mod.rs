@@ -9,6 +9,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::time::Duration;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -191,6 +192,31 @@ where
         }
     }
 
+    /// Same as above but will return an error if the method would block at the current time.
+    #[inline]
+    pub fn try_get_with_timeout<Q>(
+        &'a self,
+        key: &Q,
+        timeout: Duration,
+    ) -> TryGetResult<DHashMapRef<'a, K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let mapi = self.determine_map(&key);
+        if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_read_for(timeout) } {
+            if submap.contains_key(&key) {
+                let or = OwningRef::new(submap);
+                let or = or.map(|v| v.get(key).unwrap());
+                Ok(DHashMapRef { ptr: or })
+            } else {
+                Err(TryGetError::InvalidKey)
+            }
+        } else {
+            Err(TryGetError::DidNotResolve)
+        }
+    }
+
     /// Shortcut for a get followed by an unwrap.
     #[inline]
     pub fn index<Q>(&'a self, key: &Q) -> DHashMapRef<'a, K, V>
@@ -237,6 +263,31 @@ where
             }
         } else {
             Err(TryGetError::WouldBlock)
+        }
+    }
+
+    /// Same as above but will return an error if the method would block at the current time.
+    #[inline]
+    pub fn try_get_mut_with_timeout<Q>(
+        &'a self,
+        key: &Q,
+        timeout: Duration,
+    ) -> TryGetResult<DHashMapRefMut<'a, K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let mapi = self.determine_map(&key);
+        if let Some(submap) = unsafe { self.submaps.get_unchecked(mapi).try_write_for(timeout) } {
+            if submap.contains_key(&key) {
+                let or = OwningRefMut::new(submap);
+                let or = or.map_mut(|v| v.get_mut(key).unwrap());
+                Ok(DHashMapRefMut { ptr: or })
+            } else {
+                Err(TryGetError::InvalidKey)
+            }
+        } else {
+            Err(TryGetError::DidNotResolve)
         }
     }
 
@@ -608,6 +659,7 @@ where
 pub enum TryGetError {
     InvalidKey,
     WouldBlock,
+    DidNotResolve,
 }
 
 /// Alias for a Result with TryGetError as it's error type.
