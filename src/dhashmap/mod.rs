@@ -1,16 +1,17 @@
 //! Please see the struct level documentation.
 
 use crate::util;
-use owning_ref::{OwningRef, OwningRefMut};
 use hashbrown::HashMap;
+use owning_ref::{OwningRef, OwningRefMut};
 use parking_lot::RwLock;
 use std::borrow::Borrow;
+use std::convert::TryInto;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::time::Duration;
-use std::marker::PhantomData;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -400,11 +401,11 @@ where
         let vcount = num_cpus::get() * 8;
 
         let base: usize = 2;
-        let mut p2exp: u8 = 1;
+        let mut p2exp: u32 = 1;
 
         loop {
-            if vcount <= base.pow(u32::from(p2exp)) {
-                return Self::new(p2exp);
+            if vcount <= base.pow(p2exp) {
+                return Self::new(p2exp.try_into().unwrap());
             } else {
                 p2exp += 1;
             }
