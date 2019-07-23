@@ -1,7 +1,7 @@
 //! Please see the struct level documentation.
 
 use crate::util;
-use ccl_owning_ref::{OwningRef, OwningRefMut};
+use owning_ref::{OwningRef, OwningRefMut};
 use hashbrown::HashMap;
 use parking_lot::RwLock;
 use std::borrow::Borrow;
@@ -10,6 +10,7 @@ use std::hash::Hasher;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::time::Duration;
+use std::marker::PhantomData;
 
 /// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
@@ -638,6 +639,7 @@ where
 {
     Shared(DHashMapRef<'a, K, V>),
     Unique(DHashMapRefMut<'a, K, V>),
+    Marker(PhantomData<&'a K>, PhantomData<&'a V>),
 }
 
 impl<'a, K, V> Deref for DHashMapRefAny<'a, K, V>
@@ -651,6 +653,7 @@ where
         match self {
             DHashMapRefAny::Shared(r) => &*r,
             DHashMapRefAny::Unique(r) => &*r,
+            DHashMapRefAny::Marker(_, _) => unreachable!(),
         }
     }
 }
