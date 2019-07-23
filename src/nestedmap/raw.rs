@@ -261,7 +261,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     pub fn remove(&self, key: &K, guard: &Guard) {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
-        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::Acquire, guard);
+        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::SeqCst, guard);
 
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
@@ -270,14 +270,16 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
                     let res = self.buckets[key_pos].compare_and_set(
                         bucket_sharedptr,
                         sharedptr_null(),
-                        Ordering::Release,
+                        Ordering::SeqCst,
                         guard,
                     );
 
                     if res.is_ok() {
+                        let allocator = self.allocator.clone();
+
                         unsafe {
-                            guard.defer_unchecked(|| {
-                                bucket_sharedptr.uniform_dealloc(&self.allocator, *tag as usize);
+                            guard.defer_unchecked(move || {
+                                bucket_sharedptr.uniform_dealloc(&allocator, *tag as usize);
                             })
                         };
                     }

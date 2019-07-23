@@ -71,3 +71,13 @@ fn intoiter() {
 
     assert_eq!(map.iter().count(), 1024);
 }
+
+#[test]
+fn ref_drop_exist() {
+    let map = NestedMap::default();
+
+    map.insert("wokeblox", 492_i32);
+    let r = map.get(&"wokeblox").unwrap();
+    map.remove(&"wokeblox");
+    assert_eq!(*r, 492_i32);
+}
