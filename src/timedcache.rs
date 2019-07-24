@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use std::hash::Hash;
 use std::time;
 
-pub const VALID_DURATION: time::Duration = time::Duration::from_secs(6 * 60 * 60);
+pub const VALID_DURATION: time::Duration = time::Duration::from_secs(3 * 60 * 60);
 pub const VALID_CHECK_INTERVAL: time::Duration = time::Duration::from_secs(30 * 60);
 pub const SAVE_INTERVAL: time::Duration = time::Duration::from_secs(3 * 60);
 
