@@ -377,7 +377,7 @@ where
         Q: Hash + Eq + ?Sized,
     {
         let mut hash_state = seahash::SeaHasher::new();
-        hash_state.write_u64(self.hash_nonce * 192_876_123_862_983);
+        hash_state.write_u64(self.hash_nonce.wrapping_mul(192_876_123_862_983));
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
