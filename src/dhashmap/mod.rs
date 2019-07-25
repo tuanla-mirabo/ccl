@@ -38,7 +38,7 @@ where
 {
     ncb: usize,
     submaps: Box<[RwLock<HashMap<K, V>>]>,
-    hash_nonce: u64,
+    hash_nonce: usize,
 }
 
 impl<'a, K: 'a, V: 'a> DHashMap<K, V>
@@ -377,7 +377,7 @@ where
         Q: Hash + Eq + ?Sized,
     {
         let mut hash_state = seahash::SeaHasher::new();
-        hash_state.write_u64(self.hash_nonce.wrapping_mul(192_876_123_862_983));
+        hash_state.write_usize(self.hash_nonce.wrapping_mul(192_876_129));
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
