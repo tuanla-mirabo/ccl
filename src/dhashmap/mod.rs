@@ -226,7 +226,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        self.get(key).unwrap()
+        self.get(key).expect("Key did not exist in map")
     }
 
     /// Get a unique reference to an element contained within the map.
@@ -300,7 +300,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        self.get_mut(key).unwrap()
+        self.get_mut(key).expect("Key did not exist in map")
     }
 
     /// Get the amount of elements stored within the map.
