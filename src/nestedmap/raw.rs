@@ -87,7 +87,7 @@ impl<'a, K: Hash + Eq, V> Deref for TableRef<'a, K, V> {
 impl<K: Hash + Eq, V> Drop for Table<K, V> {
     fn drop(&mut self) {
         self.buckets.iter().for_each(|ptr| {
-            let ptr = unsafe { ptr.load(Ordering::Relaxed, epoch::unprotected()) };
+            let ptr = unsafe { ptr.load(Ordering::Acquire, epoch::unprotected()) };
             if !ptr.is_null() {
                 unsafe {
                     ptr.uniform_dealloc(&self.allocator, ptr.deref().tag() as usize);
@@ -120,8 +120,8 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         };
 
         if entry_1_pos != entry_2_pos {
-            table.buckets[entry_1_pos].store(entry_1, Ordering::Relaxed);
-            table.buckets[entry_2_pos].store(entry_2, Ordering::Relaxed);
+            table.buckets[entry_1_pos].store(entry_1, Ordering::Release);
+            table.buckets[entry_2_pos].store(entry_2, Ordering::Release);
         } else {
             let tag: u8 = rand::thread_rng().gen();
             table.buckets[entry_1_pos] = Atomic::uniform_alloc(
@@ -168,7 +168,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
         let bucket_shared: Shared<'a, Bucket<K, V>> =
-            self.buckets[key_pos].load(Ordering::Relaxed, fake_guard);
+            self.buckets[key_pos].load(Ordering::Acquire, fake_guard);
 
         if bucket_shared.is_null() {
             None
@@ -261,7 +261,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
     pub fn remove(&self, key: &K, guard: &Guard) {
         let key_pos = util::hash_with_nonce(key, self.nonce) as usize % TABLE_SIZE;
 
-        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::SeqCst, guard);
+        let bucket_sharedptr = self.buckets[key_pos].load(Ordering::Acquire, guard);
 
         if let Some(bucket_ref) = unsafe { bucket_sharedptr.as_ref() } {
             match bucket_ref {
@@ -305,7 +305,7 @@ impl<'a, K: 'a + Hash + Eq, V: 'a> Table<K, V> {
 
         while idx < TABLE_SIZE {
             let bucket_shared: Shared<'a, Bucket<K, V>> =
-                self.buckets[idx].load(Ordering::Relaxed, guard);
+                self.buckets[idx].load(Ordering::Acquire, guard);
 
             if let Some(r) = unsafe { bucket_shared.as_ref() } {
                 match r {
@@ -353,7 +353,7 @@ impl<'a, K: Hash + Eq, V> Iterator for TableIter<'a, K, V> {
 
             if let Some(bucket_ref) = unsafe {
                 self.table.buckets[self.idx]
-                    .load(Ordering::Relaxed, epoch::unprotected())
+                    .load(Ordering::Acquire, epoch::unprotected())
                     .as_ref()
             } {
                 self.idx += 1;
