@@ -8,7 +8,7 @@ Please refer to the Grand Concurrent Hashmap Competition for performance regardi
 
 Benchmarks for other parts of the library are a work in progress.
 
-## Special thanks and contributions
+## Special thanks
 
 - Karl Bergström
 
