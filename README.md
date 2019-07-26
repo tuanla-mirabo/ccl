@@ -11,3 +11,7 @@ Benchmarks for other parts of the library are a work in progress.
 ## Special thanks and contributions
 
 - Karl Bergström
+
+## License
+
+This project is licensed under MIT.
