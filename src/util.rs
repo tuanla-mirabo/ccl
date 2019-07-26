@@ -20,7 +20,7 @@ impl<T> UniformAllocExt<T> for Atomic<T> {
         unsafe {
             ptr::write(ptr as *mut T, v);
             let atomicptr = Atomic::null();
-            atomicptr.store(Shared::from_usize(ptr), Ordering::SeqCst);
+            atomicptr.store(Shared::from_usize(ptr), Ordering::Release);
             atomicptr
         }
     }
@@ -31,7 +31,7 @@ impl<T> UniformDeallocExt<T> for Atomic<T> {
     fn uniform_dealloc(&self, allocator: &UniformAllocator<T>, tag: usize) -> Option<T> {
         unsafe {
             let ptr = self
-                .load(Ordering::SeqCst, epoch::unprotected())
+                .load(Ordering::Acquire, epoch::unprotected())
                 .into_usize() as *mut u8;
             allocator.dealloc(tag, ptr)
         }
