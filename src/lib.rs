@@ -3,7 +3,6 @@
 //! Please read the module documentation for a given module before using it
 
 pub mod dashmap;
-pub mod group;
 pub mod nestedmap;
 pub mod stack;
 pub mod timedcache;
