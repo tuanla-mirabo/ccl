@@ -1,14 +1,14 @@
+use parking_lot::Mutex as RegularMutex;
 use parking_lot::RwLock as RegularRwLock;
 use parking_lot::RwLockReadGuard as RegularRwLockReadGuard;
 use parking_lot::RwLockWriteGuard as RegularRwLockWriteGuard;
-use parking_lot::Mutex as RegularMutex;
 use slab::Slab;
 use std::cell::UnsafeCell;
-use std::task::{Context, Waker, Poll};
 use std::future::Future;
 use std::mem;
-use std::pin::Pin;
 use std::ops::{Deref, DerefMut};
+use std::pin::Pin;
+use std::task::{Context, Poll, Waker};
 
 const WAIT_KEY_NONE: usize = std::usize::MAX;
 
@@ -20,7 +20,7 @@ enum Waiter {
 impl Waiter {
     fn register(&mut self, w: &Waker) {
         match self {
-            Waiter::Waiting(waker) if w.will_wake(waker) => {},
+            Waiter::Waiting(waker) if w.will_wake(waker) => {}
             _ => *self = Waiter::Waiting(w.clone()),
         }
     }
@@ -28,7 +28,7 @@ impl Waiter {
     fn wake(&mut self) {
         match mem::replace(self, Waiter::Woken) {
             Waiter::Waiting(waker) => waker.wake(),
-            Waiter::Woken => {},
+            Waiter::Woken => {}
         }
     }
 }
@@ -96,7 +96,7 @@ impl<T> RwLock<T> {
         if wait_key != WAIT_KEY_NONE {
             let mut waiters = self.waiters.lock();
             match waiters.remove(wait_key) {
-                Waiter::Waiting(_) => {},
+                Waiter::Waiting(_) => {}
                 Waiter::Woken => {
                     // We were awoken, but then dropped before we could
                     // wake up to acquire the lock. Wake up another
@@ -120,20 +120,16 @@ impl<T> RwLock<T> {
     }
 
     pub fn try_read(&self) -> Option<RwLockReadGuard<'_, T>> {
-        self.lock.try_read().map(|guard| {
-            RwLockReadGuard {
-                _inner_guard: Some(guard),
-                lock: self,
-            }
+        self.lock.try_read().map(|guard| RwLockReadGuard {
+            _inner_guard: Some(guard),
+            lock: self,
         })
     }
 
     pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, T>> {
-        self.lock.try_write().map(|guard| {
-            RwLockWriteGuard {
-                _inner_guard: Some(guard),
-                lock: self,
-            }
+        self.lock.try_write().map(|guard| RwLockWriteGuard {
+            _inner_guard: Some(guard),
+            lock: self,
         })
     }
 

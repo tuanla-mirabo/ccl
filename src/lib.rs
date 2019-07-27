@@ -3,9 +3,9 @@
 //! Please read the module documentation for a given module before using it
 
 pub mod dashmap;
+mod fut_rwlock;
 pub mod nestedmap;
 pub mod stack;
 pub mod timedcache;
 mod uniform_allocator;
 mod util;
-mod fut_rwlock;
