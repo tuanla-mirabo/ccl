@@ -1,13 +1,22 @@
 image: 'rust:latest'
 
 stages:
+  - rustfmt
   - test
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/cargo
 
+rustfmt:
+  stage: rustfmt
+  script:
+    - cargo fmt --version
+    - cargo fmt -- --check
+
 test:
   stage: test
+  when: delayed
+  start_in: 15 seconds
   script:
     - rustc --version
     - cargo --version
