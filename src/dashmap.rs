@@ -13,7 +13,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::time::Duration;
 
-/// DHashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
+/// DashMap is a threadsafe, versatile and concurrent hashmap with good performance and is balanced for both reads and writes.
 ///
 /// The API mostly matches that of the standard library hashmap but there are some
 /// differences to due to the design.
@@ -32,7 +32,7 @@ use std::time::Duration;
 /// This map is not lockfree but uses some clever locking internally. It has good average case performance
 ///
 /// You should not rely on being able to hold any combination of references involving a mutable one as it may cause a deadlock.
-pub struct DHashMap<K, V>
+pub struct DashMap<K, V>
 where
     K: Hash + Eq,
 {
@@ -41,12 +41,12 @@ where
     hash_nonce: usize,
 }
 
-impl<'a, K: 'a, V: 'a> DHashMap<K, V>
+impl<'a, K: 'a, V: 'a> DashMap<K, V>
 where
     K: Hash + Eq,
 {
-    /// Create a new DHashMap.
-    /// If you do not have specific requirements and understand the code you should probably call `DHashMap::default` instead. It will determine
+    /// Create a new DashMap.
+    /// If you do not have specific requirements and understand the code you should probably call `DashMap::default` instead. It will determine
     /// the optimal parameters automagically.
     /// The amount of chunks used is based on the formula 2^n where n is the value passed. The default method will automagically determine the optimal amount.
     ///
@@ -64,7 +64,7 @@ where
         }
     }
 
-    /// Create a new DHashMap with a specified capacity.
+    /// Create a new DashMap with a specified capacity.
     ///
     /// Will panic if the first parameter plugged into the formula 2^n produces a result higher than isize::MAX.
     pub fn with_capacity(num_chunks_log_2: u8, capacity: usize) -> Self {
@@ -91,7 +91,7 @@ where
 
     /// Get or insert an element into the map if one does not exist.
     #[inline]
-    pub fn get_or_insert<Q>(&'a self, key: &K, default: V) -> DHashMapRefAny<'a, K, V>
+    pub fn get_or_insert<Q>(&'a self, key: &K, default: V) -> DashMapRefAny<'a, K, V>
     where
         K: Clone,
     {
@@ -103,7 +103,7 @@ where
             if submap.contains_key(key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                return DHashMapRefAny::Shared(DHashMapRef { ptr: or });
+                return DashMapRefAny::Shared(DashMapRef { ptr: or });
             }
         }
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -112,7 +112,7 @@ where
         }
         let or = OwningRefMut::new(submap);
         let or = or.map_mut(|v| v.get_mut(key).unwrap());
-        DHashMapRefAny::Unique(DHashMapRefMut { ptr: or })
+        DashMapRefAny::Unique(DashMapRefMut { ptr: or })
     }
 
     /// Get or insert an element into the map if one does not exist.
@@ -121,7 +121,7 @@ where
         &'a self,
         key: &K,
         default: F,
-    ) -> DHashMapRefAny<'a, K, V>
+    ) -> DashMapRefAny<'a, K, V>
     where
         K: Clone,
     {
@@ -131,7 +131,7 @@ where
             if submap.contains_key(key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                return DHashMapRefAny::Shared(DHashMapRef { ptr: or });
+                return DashMapRefAny::Shared(DashMapRef { ptr: or });
             }
         }
         let mut submap = unsafe { self.submaps.get_unchecked(mapi).write() };
@@ -140,7 +140,7 @@ where
         }
         let or = OwningRefMut::new(submap);
         let or = or.map_mut(|v| v.get_mut(key).unwrap());
-        DHashMapRefAny::Unique(DHashMapRefMut { ptr: or })
+        DashMapRefAny::Unique(DashMapRefMut { ptr: or })
     }
 
     /// Check if the map contains the specified key.
@@ -157,7 +157,7 @@ where
 
     /// Get a shared reference to an element contained within the map.
     #[inline]
-    pub fn get<Q>(&'a self, key: &Q) -> Option<DHashMapRef<'a, K, V>>
+    pub fn get<Q>(&'a self, key: &Q) -> Option<DashMapRef<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -167,7 +167,7 @@ where
         if submap.contains_key(&key) {
             let or = OwningRef::new(submap);
             let or = or.map(|v| v.get(key).unwrap());
-            Some(DHashMapRef { ptr: or })
+            Some(DashMapRef { ptr: or })
         } else {
             None
         }
@@ -175,7 +175,7 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get<Q>(&'a self, key: &Q) -> TryGetResult<DHashMapRef<'a, K, V>>
+    pub fn try_get<Q>(&'a self, key: &Q) -> TryGetResult<DashMapRef<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -185,7 +185,7 @@ where
             if submap.contains_key(&key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                Ok(DHashMapRef { ptr: or })
+                Ok(DashMapRef { ptr: or })
             } else {
                 Err(TryGetError::InvalidKey)
             }
@@ -200,7 +200,7 @@ where
         &'a self,
         key: &Q,
         timeout: Duration,
-    ) -> TryGetResult<DHashMapRef<'a, K, V>>
+    ) -> TryGetResult<DashMapRef<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -210,7 +210,7 @@ where
             if submap.contains_key(&key) {
                 let or = OwningRef::new(submap);
                 let or = or.map(|v| v.get(key).unwrap());
-                Ok(DHashMapRef { ptr: or })
+                Ok(DashMapRef { ptr: or })
             } else {
                 Err(TryGetError::InvalidKey)
             }
@@ -221,7 +221,7 @@ where
 
     /// Shortcut for a get followed by an unwrap.
     #[inline]
-    pub fn index<Q>(&'a self, key: &Q) -> DHashMapRef<'a, K, V>
+    pub fn index<Q>(&'a self, key: &Q) -> DashMapRef<'a, K, V>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -231,7 +231,7 @@ where
 
     /// Get a unique reference to an element contained within the map.
     #[inline]
-    pub fn get_mut<Q>(&'a self, key: &Q) -> Option<DHashMapRefMut<'a, K, V>>
+    pub fn get_mut<Q>(&'a self, key: &Q) -> Option<DashMapRefMut<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -241,7 +241,7 @@ where
         if submap.contains_key(&key) {
             let or = OwningRefMut::new(submap);
             let or = or.map_mut(|v| v.get_mut(key).unwrap());
-            Some(DHashMapRefMut { ptr: or })
+            Some(DashMapRefMut { ptr: or })
         } else {
             None
         }
@@ -249,7 +249,7 @@ where
 
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
-    pub fn try_get_mut<Q>(&'a self, key: &Q) -> TryGetResult<DHashMapRefMut<'a, K, V>>
+    pub fn try_get_mut<Q>(&'a self, key: &Q) -> TryGetResult<DashMapRefMut<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -259,7 +259,7 @@ where
             if submap.contains_key(&key) {
                 let or = OwningRefMut::new(submap);
                 let or = or.map_mut(|v| v.get_mut(key).unwrap());
-                Ok(DHashMapRefMut { ptr: or })
+                Ok(DashMapRefMut { ptr: or })
             } else {
                 Err(TryGetError::InvalidKey)
             }
@@ -274,7 +274,7 @@ where
         &'a self,
         key: &Q,
         timeout: Duration,
-    ) -> TryGetResult<DHashMapRefMut<'a, K, V>>
+    ) -> TryGetResult<DashMapRefMut<'a, K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -284,7 +284,7 @@ where
             if submap.contains_key(&key) {
                 let or = OwningRefMut::new(submap);
                 let or = or.map_mut(|v| v.get_mut(key).unwrap());
-                Ok(DHashMapRefMut { ptr: or })
+                Ok(DashMapRefMut { ptr: or })
             } else {
                 Err(TryGetError::InvalidKey)
             }
@@ -295,7 +295,7 @@ where
 
     /// Shortcut for a get_mut followed by an unwrap.
     #[inline]
-    pub fn index_mut<Q>(&'a self, key: &Q) -> DHashMapRefMut<'a, K, V>
+    pub fn index_mut<Q>(&'a self, key: &Q) -> DashMapRefMut<'a, K, V>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -392,11 +392,11 @@ where
     }
 }
 
-impl<K, V> Default for DHashMap<K, V>
+impl<K, V> Default for DashMap<K, V>
 where
     K: Hash + Eq,
 {
-    /// Creates a new DHashMap and automagically determines the optimal amount of chunks.
+    /// Creates a new DashMap and automagically determines the optimal amount of chunks.
     fn default() -> Self {
         let vcount = num_cpus::get() * 8;
 
@@ -413,8 +413,8 @@ where
     }
 }
 
-/// A shared reference into a DHashMap created from an iterator.
-pub struct DHashMapIterRef<'a, K, V>
+/// A shared reference into a DashMap created from an iterator.
+pub struct DashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -423,7 +423,7 @@ where
     ptr_v: &'a V,
 }
 
-impl<'a, K, V> DHashMapIterRef<'a, K, V>
+impl<'a, K, V> DashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -440,7 +440,7 @@ where
     }
 }
 
-impl<'a, K, V> Drop for DHashMapIterRef<'a, K, V>
+impl<'a, K, V> Drop for DashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -450,7 +450,7 @@ where
     }
 }
 
-impl<'a, K, V> Deref for DHashMapIterRef<'a, K, V>
+impl<'a, K, V> Deref for DashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -462,14 +462,14 @@ where
     }
 }
 
-/// An immutable iterator over a DHashMap.
+/// An immutable iterator over a DashMap.
 #[allow(clippy::type_complexity)]
 pub struct Iter<'a, K, V>
 where
     K: Hash + Eq,
 {
     c_map_index: usize,
-    map: &'a DHashMap<K, V>,
+    map: &'a DashMap<K, V>,
     c_iter: Option<(
         Arc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>,
         hashbrown::hash_map::Iter<'a, K, V>,
@@ -480,7 +480,7 @@ impl<'a, K, V> Iter<'a, K, V>
 where
     K: Hash + Eq,
 {
-    fn new(map: &'a DHashMap<K, V>) -> Self {
+    fn new(map: &'a DashMap<K, V>) -> Self {
         Self {
             c_map_index: 0,
             map,
@@ -488,7 +488,7 @@ where
         }
     }
 
-    fn slow_path_new_chunk(&mut self) -> Option<DHashMapIterRef<'a, K, V>> {
+    fn slow_path_new_chunk(&mut self) -> Option<DashMapIterRef<'a, K, V>> {
         if self.c_map_index == self.map.submaps.len() {
             return None;
         }
@@ -510,7 +510,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V>
 where
     K: Hash + Eq,
 {
-    type Item = DHashMapIterRef<'a, K, V>;
+    type Item = DashMapIterRef<'a, K, V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -520,7 +520,7 @@ where
                 let ptr_k = unsafe { &*(i.0 as *const _) };
                 let ptr_v = unsafe { &*(i.1 as *const _) };
 
-                return Some(DHashMapIterRef {
+                return Some(DashMapIterRef {
                     guard,
                     ptr_k,
                     ptr_v,
@@ -583,15 +583,15 @@ where
     }
 }
 
-/// A shared reference into a DHashMap.
-pub struct DHashMapRef<'a, K, V>
+/// A shared reference into a DashMap.
+pub struct DashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
     ptr: OwningRef<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>, V>,
 }
 
-impl<'a, K, V> Deref for DHashMapRef<'a, K, V>
+impl<'a, K, V> Deref for DashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -603,15 +603,15 @@ where
     }
 }
 
-/// A unique reference into a DHashMap.
-pub struct DHashMapRefMut<'a, K, V>
+/// A unique reference into a DashMap.
+pub struct DashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
     ptr: OwningRefMut<parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>, V>,
 }
 
-impl<'a, K, V> Deref for DHashMapRefMut<'a, K, V>
+impl<'a, K, V> Deref for DashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -623,7 +623,7 @@ where
     }
 }
 
-impl<'a, K, V> DerefMut for DHashMapRefMut<'a, K, V>
+impl<'a, K, V> DerefMut for DashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -633,17 +633,17 @@ where
     }
 }
 
-/// A unique reference into a DHashMap.
-pub enum DHashMapRefAny<'a, K, V>
+/// A unique reference into a DashMap.
+pub enum DashMapRefAny<'a, K, V>
 where
     K: Hash + Eq,
 {
-    Shared(DHashMapRef<'a, K, V>),
-    Unique(DHashMapRefMut<'a, K, V>),
+    Shared(DashMapRef<'a, K, V>),
+    Unique(DashMapRefMut<'a, K, V>),
     Marker(PhantomData<&'a K>, PhantomData<&'a V>),
 }
 
-impl<'a, K, V> Deref for DHashMapRefAny<'a, K, V>
+impl<'a, K, V> Deref for DashMapRefAny<'a, K, V>
 where
     K: Hash + Eq,
 {
@@ -652,14 +652,14 @@ where
     #[inline]
     fn deref(&self) -> &V {
         match self {
-            DHashMapRefAny::Shared(r) => &*r,
-            DHashMapRefAny::Unique(r) => &*r,
-            DHashMapRefAny::Marker(_, _) => unreachable!(),
+            DashMapRefAny::Shared(r) => &*r,
+            DashMapRefAny::Unique(r) => &*r,
+            DashMapRefAny::Marker(_, _) => unreachable!(),
         }
     }
 }
 
-/// A error possibly returned by the try_get family of methods for DHashMap.
+/// A error possibly returned by the try_get family of methods for DashMap.
 pub enum TryGetError {
     /// Returned if the key did not exist in the map.
     InvalidKey,
@@ -678,13 +678,13 @@ pub type TryGetResult<T> = Result<T, TryGetError>;
 mod tests {
     use super::*;
 
-    fn use_map(mut e: DHashMapRefMut<i32, i32>) {
+    fn use_map(mut e: DashMapRefMut<i32, i32>) {
         *e *= 2;
     }
 
     #[test]
     fn move_deref() {
-        let map = DHashMap::default();
+        let map = DashMap::default();
         map.insert(3, 69);
         let e = map.index_mut(&3);
         use_map(e);
@@ -693,7 +693,7 @@ mod tests {
 
     #[test]
     fn insert_then_assert_1024() {
-        let map = DHashMap::default();
+        let map = DashMap::default();
 
         for i in 0..1024_i32 {
             map.insert(i, i * 2);
@@ -708,7 +708,7 @@ mod tests {
 
     #[test]
     fn insert_then_iter_1024() {
-        let map = DHashMap::default();
+        let map = DashMap::default();
 
         for i in 0..1024_i32 {
             map.insert(i, i * 2);
@@ -721,7 +721,7 @@ mod tests {
 
     #[test]
     fn insert_then_assert_str() {
-        let map = DHashMap::default();
+        let map = DashMap::default();
         map.insert("foo".to_string(), 51i32);
         assert_eq!(*map.index("foo"), 51i32);
     }

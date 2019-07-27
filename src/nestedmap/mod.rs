@@ -184,7 +184,7 @@ pub fn aquire_guard() -> Guard {
 /// NestedMap is a threadsafe concurrent hashmap with generally good performance.
 ///
 ///
-/// The primary difference compared to DHashMap is that NestedMap is lockfree and non-blocking which
+/// The primary difference compared to DashMap is that NestedMap is lockfree and non-blocking which
 /// makes it more appealing for latency critical things. It also has faster reads that DHashMap.
 pub struct NestedMap<K: Hash + Eq, V> {
     root: Table<K, V>,

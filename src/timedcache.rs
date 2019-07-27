@@ -3,7 +3,7 @@
 //! Acts as a overlay on top of whatever persistent storage you are using and handles
 //! loading and saving of data behind the scenes.
 
-use crate::dhashmap::DHashMap;
+use crate::dashmap::DashMap;
 use parking_lot::Mutex;
 use std::hash::Hash;
 use std::time;
@@ -22,7 +22,7 @@ pub struct TimedCache<K, V>
 where
     K: Hash + Eq + Clone,
 {
-    storage: DHashMap<K, (V, time::Instant, bool)>,
+    storage: DashMap<K, (V, time::Instant, bool)>,
     load_item_fn: fn(&K) -> Option<V>,
     save_item_fn: fn(&K, &V) -> bool,
     last_saved: Mutex<time::Instant>,
@@ -49,7 +49,7 @@ impl<'a, K: Hash + Eq + Clone, V> TimedCache<K, V> {
         save_interval: Option<time::Duration>,
     ) -> Self {
         Self {
-            storage: DHashMap::default(),
+            storage: DashMap::default(),
             load_item_fn: load_item,
             save_item_fn: save_item,
             last_saved: Mutex::new(time::Instant::now()),
