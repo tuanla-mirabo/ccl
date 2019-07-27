@@ -24,6 +24,7 @@ ccl-crossbeam-epoch = { path = "lib/ccl-crossbeam-epoch", version = "0.7.4" }
 seahash = "3.0.6"
 owning_ref = "0.4.0"
 slab = "0.4.2"
+stable_deref_trait = "1.1.1"
 
 [dev-dependencies]
 rayon = "1.1.0"

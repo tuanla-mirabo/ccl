@@ -9,6 +9,7 @@ use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::task::{Context, Poll, Waker};
+use stable_deref_trait::StableDeref;
 
 const WAIT_KEY_NONE: usize = std::usize::MAX;
 
@@ -250,3 +251,6 @@ unsafe impl<T: Sync> Sync for RwLockReadGuard<'_, T> {}
 
 unsafe impl<T: Send> Send for RwLockWriteGuard<'_, T> {}
 unsafe impl<T: Sync> Sync for RwLockWriteGuard<'_, T> {}
+
+unsafe impl<T> StableDeref for RwLockReadGuard<'_, T> {}
+unsafe impl<T> StableDeref for RwLockWriteGuard<'_, T> {}
