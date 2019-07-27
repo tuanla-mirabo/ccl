@@ -20,6 +20,7 @@ enum Waiter {
 }
 
 impl Waiter {
+    #[inline]
     fn register(&mut self, w: &Waker) {
         match self {
             Waiter::Waiting(waker) if w.will_wake(waker) => {}
@@ -27,6 +28,7 @@ impl Waiter {
         }
     }
 
+    #[inline]
     fn wake(&mut self) {
         match mem::replace(self, Waiter::Woken) {
             Waiter::Waiting(waker) => waker.wake(),
@@ -43,12 +45,14 @@ pub struct RwLockReadGuard<'a, T> {
 impl<'a, T> Deref for RwLockReadGuard<'a, T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.lock.data.get() }
     }
 }
 
 impl<'a, T> Drop for RwLockReadGuard<'a, T> {
+    #[inline]
     fn drop(&mut self) {
         drop(self._inner_guard.take());
         let mut waiters = self.lock.waiters.lock();
@@ -66,18 +70,21 @@ pub struct RwLockWriteGuard<'a, T> {
 impl<'a, T> Deref for RwLockWriteGuard<'a, T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.lock.data.get() }
     }
 }
 
 impl<'a, T> DerefMut for RwLockWriteGuard<'a, T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.lock.data.get() }
     }
 }
 
 impl<'a, T> Drop for RwLockWriteGuard<'a, T> {
+    #[inline]
     fn drop(&mut self) {
         drop(self._inner_guard.take());
         let mut waiters = self.lock.waiters.lock();
@@ -121,6 +128,7 @@ impl<T> RwLock<T> {
         }
     }
 
+    #[inline]
     pub fn try_read(&self) -> Option<RwLockReadGuard<'_, T>> {
         self.lock.try_read().map(|guard| RwLockReadGuard {
             _inner_guard: Some(guard),
@@ -128,6 +136,7 @@ impl<T> RwLock<T> {
         })
     }
 
+    #[inline]
     pub fn try_read_for(&self, d: Duration) -> Option<RwLockReadGuard<'_, T>> {
         self.lock.try_read_for(d).map(|guard| RwLockReadGuard {
             _inner_guard: Some(guard),
@@ -135,6 +144,7 @@ impl<T> RwLock<T> {
         })
     }
 
+    #[inline]
     pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, T>> {
         self.lock.try_write().map(|guard| RwLockWriteGuard {
             _inner_guard: Some(guard),
@@ -142,6 +152,7 @@ impl<T> RwLock<T> {
         })
     }
 
+    #[inline]
     pub fn try_write_for(&self, d: Duration) -> Option<RwLockWriteGuard<'_, T>> {
         self.lock.try_write_for(d).map(|guard| RwLockWriteGuard {
             _inner_guard: Some(guard),
@@ -149,6 +160,7 @@ impl<T> RwLock<T> {
         })
     }
 
+    #[inline]
     pub fn read(&self) -> RwLockReadGuard<'_, T> {
         RwLockReadGuard {
             _inner_guard: Some(self.lock.read()),
@@ -156,6 +168,7 @@ impl<T> RwLock<T> {
         }
     }
 
+    #[inline]
     pub fn write(&self) -> RwLockWriteGuard<'_, T> {
         RwLockWriteGuard {
             _inner_guard: Some(self.lock.write()),
@@ -163,6 +176,7 @@ impl<T> RwLock<T> {
         }
     }
 
+    #[inline]
     pub fn async_read(&self) -> RwLockReadFuture<'_, T> {
         RwLockReadFuture {
             lock: Some(self),
@@ -170,6 +184,7 @@ impl<T> RwLock<T> {
         }
     }
 
+    #[inline]
     pub fn async_write(&self) -> RwLockWriteFuture<'_, T> {
         RwLockWriteFuture {
             lock: Some(self),
@@ -184,6 +199,7 @@ pub struct RwLockReadFuture<'a, T> {
 }
 
 impl<'a, T> Drop for RwLockReadFuture<'a, T> {
+    #[inline]
     fn drop(&mut self) {
         if let Some(lock) = self.lock {
             lock.remove_waker(self.wait_key, true);
@@ -228,6 +244,7 @@ pub struct RwLockWriteFuture<'a, T> {
 }
 
 impl<'a, T> Drop for RwLockWriteFuture<'a, T> {
+    #[inline]
     fn drop(&mut self) {
         if let Some(lock) = self.lock {
             lock.remove_waker(self.wait_key, true);
