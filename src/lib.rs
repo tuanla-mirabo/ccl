@@ -5,7 +5,6 @@
 pub mod dashmap;
 pub mod nestedmap;
 pub mod stack;
-mod switchmap;
 pub mod timedcache;
 mod uniform_allocator;
 mod util;
