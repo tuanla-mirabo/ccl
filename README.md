@@ -12,6 +12,8 @@ Benchmarks for other parts of the library are a work in progress.
 
 - Karl Bergström
 
+- DPC
+
 ## License
 
 This project is licensed under MIT.
