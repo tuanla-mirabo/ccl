@@ -4,9 +4,6 @@ stages:
   - rustfmt
   - test
 
-variables:
-  CARGO_HOME: $CI_PROJECT_DIR/cargo
-
 rustfmt:
   stage: rustfmt
   script:
@@ -26,5 +23,4 @@ test:
 
 cache:
   paths:
-    - cargo/
     - target/
