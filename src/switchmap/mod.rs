@@ -2,9 +2,9 @@ mod vecmap;
 
 use crate::util;
 use hashbrown::HashMap;
+use std::borrow::Borrow;
 use std::hash::Hash;
 use vecmap::VecMap;
-use std::borrow::Borrow;
 
 const THRESHOLD: usize = 64;
 
