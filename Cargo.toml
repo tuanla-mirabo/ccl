@@ -29,3 +29,6 @@ futures-preview = "=0.3.0-alpha.17"
 
 [dev-dependencies]
 rayon = "1.1.0"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", ".cargo/registry/src/github.com-1ecc6299db9ec823/pwnies-0.0.14/pwnies.html"]
