@@ -1,9 +1,9 @@
 //! Please see the struct level documentation.
 
+use crate::fut_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::util;
 use hashbrown::HashMap;
 use owning_ref::{OwningRef, OwningRefMut};
-use parking_lot::RwLock;
 use std::borrow::Borrow;
 use std::convert::TryInto;
 use std::hash::Hash;
@@ -418,7 +418,7 @@ pub struct DashMapIterRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    guard: Option<Arc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>>,
+    guard: Option<Arc<RwLockReadGuard<'a, HashMap<K, V>>>>,
     ptr_k: &'a K,
     ptr_v: &'a V,
 }
@@ -471,7 +471,7 @@ where
     c_map_index: usize,
     map: &'a DashMap<K, V>,
     c_iter: Option<(
-        Arc<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>>,
+        Arc<RwLockReadGuard<'a, HashMap<K, V>>>,
         hashbrown::hash_map::Iter<'a, K, V>,
     )>,
 }
@@ -537,7 +537,7 @@ pub struct Chunk<'a, K, V>
 where
     K: Hash + Eq,
 {
-    inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>,
+    inner: RwLockReadGuard<'a, HashMap<K, V>>,
 }
 
 impl<'a, K: 'a, V: 'a> Chunk<'a, K, V>
@@ -545,7 +545,7 @@ where
     K: Hash + Eq,
 {
     #[inline]
-    fn new(inner: parking_lot::RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
+    fn new(inner: RwLockReadGuard<'a, HashMap<K, V>>) -> Self {
         Self { inner }
     }
 
@@ -560,7 +560,7 @@ pub struct ChunkMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>,
+    inner: RwLockWriteGuard<'a, HashMap<K, V>>,
 }
 
 impl<'a, K: 'a, V: 'a> ChunkMut<'a, K, V>
@@ -568,7 +568,7 @@ where
     K: Hash + Eq,
 {
     #[inline]
-    fn new(inner: parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
+    fn new(inner: RwLockWriteGuard<'a, HashMap<K, V>>) -> Self {
         Self { inner }
     }
 
@@ -588,7 +588,7 @@ pub struct DashMapRef<'a, K, V>
 where
     K: Hash + Eq,
 {
-    ptr: OwningRef<parking_lot::RwLockReadGuard<'a, HashMap<K, V>>, V>,
+    ptr: OwningRef<RwLockReadGuard<'a, HashMap<K, V>>, V>,
 }
 
 impl<'a, K, V> Deref for DashMapRef<'a, K, V>
@@ -608,7 +608,7 @@ pub struct DashMapRefMut<'a, K, V>
 where
     K: Hash + Eq,
 {
-    ptr: OwningRefMut<parking_lot::RwLockWriteGuard<'a, HashMap<K, V>>, V>,
+    ptr: OwningRefMut<RwLockWriteGuard<'a, HashMap<K, V>>, V>,
 }
 
 impl<'a, K, V> Deref for DashMapRefMut<'a, K, V>

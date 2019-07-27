@@ -3,13 +3,14 @@ use parking_lot::RwLock as RegularRwLock;
 use parking_lot::RwLockReadGuard as RegularRwLockReadGuard;
 use parking_lot::RwLockWriteGuard as RegularRwLockWriteGuard;
 use slab::Slab;
+use stable_deref_trait::StableDeref;
 use std::cell::UnsafeCell;
 use std::future::Future;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::task::{Context, Poll, Waker};
-use stable_deref_trait::StableDeref;
+use std::time::Duration;
 
 const WAIT_KEY_NONE: usize = std::usize::MAX;
 
@@ -127,8 +128,22 @@ impl<T> RwLock<T> {
         })
     }
 
+    pub fn try_read_for(&self, d: Duration) -> Option<RwLockReadGuard<'_, T>> {
+        self.lock.try_read_for(d).map(|guard| RwLockReadGuard {
+            _inner_guard: Some(guard),
+            lock: self,
+        })
+    }
+
     pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, T>> {
         self.lock.try_write().map(|guard| RwLockWriteGuard {
+            _inner_guard: Some(guard),
+            lock: self,
+        })
+    }
+
+    pub fn try_write_for(&self, d: Duration) -> Option<RwLockWriteGuard<'_, T>> {
+        self.lock.try_write_for(d).map(|guard| RwLockWriteGuard {
             _inner_guard: Some(guard),
             lock: self,
         })
@@ -145,6 +160,20 @@ impl<T> RwLock<T> {
         RwLockWriteGuard {
             _inner_guard: Some(self.lock.write()),
             lock: self,
+        }
+    }
+
+    pub fn async_read(&self) -> RwLockReadFuture<'_, T> {
+        RwLockReadFuture {
+            lock: Some(self),
+            wait_key: WAIT_KEY_NONE,
+        }
+    }
+
+    pub fn async_write(&self) -> RwLockWriteFuture<'_, T> {
+        RwLockWriteFuture {
+            lock: Some(self),
+            wait_key: WAIT_KEY_NONE,
         }
     }
 }
