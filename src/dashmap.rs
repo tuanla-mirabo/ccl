@@ -2,6 +2,7 @@
 
 use crate::fut_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::util;
+use futures::future::{Future, FutureExt};
 use hashbrown::HashMap;
 use owning_ref::{OwningRef, OwningRefMut};
 use std::borrow::Borrow;
@@ -173,6 +174,25 @@ where
         }
     }
 
+    #[inline]
+    pub fn async_get<Q>(&'a self, key: Q) -> impl Future<Output = Option<DashMapRef<'a, K, V>>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + Sized,
+    {
+        let mapi = self.determine_map(&key);
+        let submapfut = unsafe { self.submaps.get_unchecked(mapi).async_read() };
+        submapfut.map(move |submap| {
+            if submap.contains_key(&key) {
+                let or = OwningRef::new(submap);
+                let or = or.map(|v| v.get(&key).unwrap());
+                Some(DashMapRef { ptr: or })
+            } else {
+                None
+            }
+        })
+    }
+
     /// Same as above but will return an error if the method would block at the current time.
     #[inline]
     pub fn try_get<Q>(&'a self, key: &Q) -> TryGetResult<DashMapRef<'a, K, V>>
@@ -245,6 +265,28 @@ where
         } else {
             None
         }
+    }
+
+    #[inline]
+    pub fn async_get_mut<Q>(
+        &'a self,
+        key: Q,
+    ) -> impl Future<Output = Option<DashMapRefMut<'a, K, V>>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + Sized,
+    {
+        let mapi = self.determine_map(&key);
+        let submapfut = unsafe { self.submaps.get_unchecked(mapi).async_write() };
+        submapfut.map(move |submap| {
+            if submap.contains_key(&key) {
+                let or = OwningRefMut::new(submap);
+                let or = or.map_mut(|v| v.get_mut(&key).unwrap());
+                Some(DashMapRefMut { ptr: or })
+            } else {
+                None
+            }
+        })
     }
 
     /// Same as above but will return an error if the method would block at the current time.
