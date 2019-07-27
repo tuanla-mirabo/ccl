@@ -70,6 +70,17 @@ impl<K: Hash + Eq, V> SwitchMap<K, V> {
         }
     }
 
+    pub fn get_mut<Q>(&mut self, k: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        match self {
+            SwitchMap::Flat(m) => m.get_mut(k),
+            SwitchMap::Map(m) => m.get_mut(k),
+        }
+    }
+
     pub fn contains_key<Q>(&self, k: &Q) -> bool
     where
         K: Borrow<Q>,

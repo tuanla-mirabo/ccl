@@ -81,6 +81,19 @@ impl<K: Hash + Eq, V> VecMap<K, V> {
         None
     }
 
+    pub fn get_mut<Q>(&mut self, k: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Eq,
+    {
+        for (i, k1) in self.keys.iter().enumerate() {
+            if k1.borrow() == k {
+                return self.values.get_mut(i);
+            }
+        }
+        None
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.keys.iter().zip(self.values.iter())
     }
