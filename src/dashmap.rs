@@ -690,7 +690,8 @@ where
             return None;
         }
 
-        let guard: *mut RwLockWriteGuard<'_, HashMap<K, V>> = Arc::into_raw(Arc::new(self.map.submaps[self.c_map_index].write())) as _;
+        let guard: *mut RwLockWriteGuard<'_, HashMap<K, V>> =
+            Arc::into_raw(Arc::new(self.map.submaps[self.c_map_index].write())) as _;
         let gr: &mut RwLockWriteGuard<'_, HashMap<K, V>> = unsafe { &mut *guard };
         let iter = gr.iter_mut();
 
