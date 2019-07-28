@@ -34,6 +34,7 @@ use std::time::Duration;
 /// This map is not lockfree but uses some clever locking internally. It has good average case performance
 ///
 /// You should not rely on being able to hold any combination of references involving a mutable one as it may cause a deadlock.
+/// This will be fixed in the future.
 pub struct DashMap<K, V>
 where
     K: Hash + Eq,
@@ -438,7 +439,7 @@ where
         Q: Hash + Eq + ?Sized,
     {
         let mut hash_state = seahash::SeaHasher::new();
-        hash_state.write_usize(self.hash_nonce.wrapping_mul(192_876_129));
+        hash_state.write_usize(self.hash_nonce);
         key.hash(&mut hash_state);
 
         let hash = hash_state.finish();
