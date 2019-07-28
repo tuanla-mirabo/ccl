@@ -24,7 +24,7 @@ use std::time::Duration;
 /// Instead you have to iterate over chunks which can iterate over KV pairs.
 /// This is needed in order to use the calling thread stack as scratch space to avoid heap allocations.
 ///
-/// The iter method currently provides a more ergonomic immutable iterator that is slightly less performant.
+/// The iter method currently provides a more ergonomic iterator that is slightly less performant.
 /// It should be extremely performant still but it is a tad slower than using the chunks interface.
 ///
 /// Unsafe is used to avoid bounds checking when accessing chunks.
@@ -414,10 +414,16 @@ where
         });
     }
 
-    /// Iterate over the (K, V) pairs stored in the map.
+    /// Iterate over the (K, V) pairs stored in the map immutably.
     #[inline]
     pub fn iter(&'a self) -> Iter<'a, K, V> {
         Iter::new(self)
+    }
+
+    /// Iterate over the (K, V) pairs stored in the map mutably.
+    #[inline]
+    pub fn iter_mut(&'a self) -> IterMut<'a, K, V> {
+        IterMut::new(self)
     }
 
     /// Iterate over chunks in a read only fashion.
@@ -583,6 +589,136 @@ where
                 let ptr_v = unsafe { &*(i.1 as *const _) };
 
                 return Some(DashMapIterRef {
+                    guard,
+                    ptr_k,
+                    ptr_v,
+                });
+            }
+        }
+
+        self.slow_path_new_chunk()
+    }
+}
+
+/// A shared reference into a DashMap created from an iterator.
+pub struct DashMapIterRefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    guard: Option<Arc<RwLockWriteGuard<'a, HashMap<K, V>>>>,
+    ptr_k: &'a K,
+    ptr_v: &'a mut V,
+}
+
+impl<'a, K, V> DashMapIterRefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    /// Get the key of the entry.
+    #[inline]
+    pub fn key(&self) -> &K {
+        self.ptr_k
+    }
+
+    /// Get the value of the entry.
+    #[inline]
+    pub fn value(&mut self) -> &mut V {
+        self.ptr_v
+    }
+}
+
+impl<'a, K, V> Drop for DashMapIterRefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    #[inline]
+    fn drop(&mut self) {
+        self.guard.take();
+    }
+}
+
+impl<'a, K, V> Deref for DashMapIterRefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Target = V;
+
+    #[inline]
+    fn deref(&self) -> &V {
+        self.ptr_v
+    }
+}
+
+impl<'a, K, V> DerefMut for DashMapIterRefMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut V {
+        self.ptr_v
+    }
+}
+
+/// An mutable iterator over a DashMap.
+#[allow(clippy::type_complexity)]
+pub struct IterMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    c_map_index: usize,
+    map: &'a DashMap<K, V>,
+    c_iter: Option<(
+        Arc<RwLockWriteGuard<'a, HashMap<K, V>>>,
+        hashbrown::hash_map::IterMut<'a, K, V>,
+    )>,
+}
+
+impl<'a, K, V> IterMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    fn new(map: &'a DashMap<K, V>) -> Self {
+        Self {
+            c_map_index: 0,
+            map,
+            c_iter: None,
+        }
+    }
+
+    fn slow_path_new_chunk(&mut self) -> Option<DashMapIterRefMut<'a, K, V>> {
+        if self.c_map_index == self.map.submaps.len() {
+            return None;
+        }
+
+        let guard: *mut RwLockWriteGuard<'_, HashMap<K, V>> = Arc::into_raw(Arc::new(self.map.submaps[self.c_map_index].write())) as _;
+        let gr: &mut RwLockWriteGuard<'_, HashMap<K, V>> = unsafe { &mut *guard };
+        let iter = gr.iter_mut();
+
+        std::mem::replace(
+            &mut self.c_iter,
+            Some((unsafe { Arc::from_raw(guard) }, iter)),
+        );
+
+        self.c_map_index += 1;
+        self.next()
+    }
+}
+
+impl<'a, K, V> Iterator for IterMut<'a, K, V>
+where
+    K: Hash + Eq,
+{
+    type Item = DashMapIterRefMut<'a, K, V>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(c_iter) = &mut self.c_iter {
+            if let Some(i) = c_iter.1.next() {
+                let guard = Some(c_iter.0.clone());
+                let ptr_k = unsafe { &*(i.0 as *const _) };
+                let ptr_v = unsafe { &mut *(i.1 as *mut _) };
+
+                return Some(DashMapIterRefMut {
                     guard,
                     ptr_k,
                     ptr_v,
