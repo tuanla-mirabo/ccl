@@ -2,6 +2,7 @@
 
 use crate::fut_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::util;
+use crate::util::map_in_place;
 use futures::future::{Future, FutureExt};
 use hashbrown::HashMap;
 use owning_ref::{OwningRef, OwningRefMut};
@@ -389,9 +390,27 @@ where
 
     /// Apply a function to every item in the map.
     #[inline]
-    pub fn alter<F: FnMut((&K, &mut V)) + Clone>(&self, f: F) {
-        self.chunks_write()
-            .for_each(|mut t| t.iter_mut().for_each(f.clone()))
+    pub fn alter<Q, F: FnOnce(V) -> V>(&self, k: &Q, f: F)
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let v = self.get_mut(k);
+        if let Some(mut v) = v {
+            unsafe {
+                map_in_place(&mut *v, f);
+            }
+        }
+    }
+
+    /// Apply a function to every item in the map.
+    #[inline]
+    pub fn alter_all<F: FnMut(V) -> V + Clone>(&self, f: F) {
+        self.chunks_write().for_each(|mut t| {
+            t.iter_mut().for_each(|v| unsafe {
+                map_in_place(&mut *v.1, f.clone());
+            })
+        });
     }
 
     /// Iterate over the (K, V) pairs stored in the map.
