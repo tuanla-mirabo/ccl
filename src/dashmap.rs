@@ -898,7 +898,7 @@ mod tests {
             map.insert(i, i * 2);
         }
 
-        map.alter(|(_, v)| *v *= 2);
+        map.alter_all(|v| v * 2);
 
         for i in 0..1024_i32 {
             assert_eq!(i * 4, *map.get(&i).unwrap());
@@ -913,7 +913,7 @@ mod tests {
             map.insert(i, i * 2);
         }
 
-        map.alter(|(_, v)| *v *= 2);
+        map.alter_all(|v| v * 2);
 
         assert_eq!(map.iter().count(), 1024);
     }
