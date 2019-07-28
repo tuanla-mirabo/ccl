@@ -919,6 +919,19 @@ mod tests {
     }
 
     #[test]
+    fn insert_then_iter_mut_map_1024() {
+        let map = DashMap::default();
+
+        for i in 0..1024_i32 {
+            map.insert(i, 4);
+        }
+
+        map.iter_mut().for_each(|mut r| *r *= 2);
+
+        assert_eq!(map.iter().fold(0, |acc, e| acc + *e), 8192);
+    }
+
+    #[test]
     fn insert_then_assert_str() {
         let map = DashMap::default();
         map.insert("foo".to_string(), 51i32);
