@@ -94,7 +94,7 @@ where
 
     /// Get or insert an element into the map if one does not exist.
     #[inline]
-    pub fn get_or_insert<Q>(&'a self, key: &K, default: V) -> DashMapRefAny<'a, K, V>
+    pub fn get_or_insert(&'a self, key: &K, default: V) -> DashMapRefAny<'a, K, V>
     where
         K: Clone,
     {
