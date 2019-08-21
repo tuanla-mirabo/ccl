@@ -1,6 +1,6 @@
 [package]
 name = "ccl"
-version = "5.1.0"
+version = "5.1.1"
 authors = ["acrimon <joel.wejdenstal@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -12,11 +12,14 @@ documentation = "https://docs.rs/ccl"
 keywords = ["atomic", "concurrent", "map", "parallel", "hashmap"]
 categories = ["concurrency", "algorithms", "data-structures"]
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", ".cargo/registry/src/github.com-1ecc6299db9ec823/pwnies-0.0.14/pwnies.html"]
+
 [features]
 nightly = ["parking_lot/nightly", "hashbrown/nightly", "ccl-crossbeam-epoch/nightly"]
 
 [dependencies]
-hashbrown = "0.5.0"
+hashbrown = "0.6.0"
 parking_lot = { version = "0.9.0", features = ["owning_ref"] }
 rand = "0.7.0"
 num_cpus = "1.10.1"
@@ -29,6 +32,3 @@ futures-preview = "=0.3.0-alpha.17"
 
 [dev-dependencies]
 rayon = "1.1.0"
-
-[package.metadata.docs.rs]
-rustdoc-args = ["--html-in-header", ".cargo/registry/src/github.com-1ecc6299db9ec823/pwnies-0.0.14/pwnies.html"]
