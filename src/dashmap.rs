@@ -158,6 +158,26 @@ where
         submap.contains_key(&key)
     }
 
+    #[inline]
+    pub fn get_raw_from_key<Q>(&'a mut self, key: &Q) -> RwLockReadGuard<'a, HashMap<K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let mapi = self.determine_map(key);
+        unsafe { self.submaps.get_unchecked(mapi).read() }
+    }
+
+    #[inline]
+    pub fn get_raw_mut_from_key<Q>(&'a mut self, key: &Q) -> RwLockWriteGuard<'a, HashMap<K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        let mapi = self.determine_map(key);
+        unsafe { self.submaps.get_unchecked(mapi).write() }
+    }
+
     /// Get a shared reference to an element contained within the map.
     #[inline]
     pub fn get<Q>(&'a self, key: &Q) -> Option<DashMapRef<'a, K, V>>
