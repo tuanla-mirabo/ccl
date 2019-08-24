@@ -159,7 +159,7 @@ where
     }
 
     #[inline]
-    pub fn get_raw_from_key<Q>(&'a mut self, key: &Q) -> RwLockReadGuard<'a, HashMap<K, V>>
+    pub fn get_raw_from_key<Q>(&'a self, key: &Q) -> RwLockReadGuard<'a, HashMap<K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
@@ -169,7 +169,7 @@ where
     }
 
     #[inline]
-    pub fn get_raw_mut_from_key<Q>(&'a mut self, key: &Q) -> RwLockWriteGuard<'a, HashMap<K, V>>
+    pub fn get_raw_mut_from_key<Q>(&'a self, key: &Q) -> RwLockWriteGuard<'a, HashMap<K, V>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
