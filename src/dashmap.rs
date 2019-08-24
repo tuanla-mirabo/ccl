@@ -409,7 +409,7 @@ where
         });
     }
 
-    /// Apply a function to every item in the map.
+    /// Apply a function to a a specified entry in the map.
     #[inline]
     pub fn alter<Q, F: FnOnce(V) -> V>(&self, k: &Q, f: F)
     where
