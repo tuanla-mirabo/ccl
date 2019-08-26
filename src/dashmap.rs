@@ -35,6 +35,7 @@ use std::time::Duration;
 ///
 /// You should not rely on being able to hold any combination of references involving a mutable one as it may cause a deadlock.
 /// This will be fixed in the future.
+#[deprecated(note = "DashMap from ccl is deprecated and kept for compat. Consider importing it from the dashmap crate.")]
 pub struct DashMap<K, V>
 where
     K: Hash + Eq,
